@@ -1,0 +1,70 @@
+<html>
+    <head>
+        <title>ES teste3</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <script src="CubeJS.js" type="text/javascript"></script>
+        <script src="plugins/es.plugin.js" type="text/javascript"></script>
+        <script src="plugins/operations.plugin.js" type="text/javascript"></script>
+        <script src="plugins/functions.plugin.js" type="text/javascript"></script>
+        <script src="plugins/table.plugin.js" type="text/javascript"></script>
+        <script src="dados4.js" type="text/javascript"></script>
+        <script src="syntaxHighlight.js" type="text/javascript"></script>
+        
+        <style>
+            pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
+            .string { color: green; }
+            .number { color: darkorange; }
+            .boolean { color: blue; }
+            .null { color: magenta; }
+            .key { color: red; }
+        </style>
+        <style>
+            .table     {border:solid 1px #000;border-style:solid none none solid;}
+            .cell      {background:#D7D7D7;border:solid 1px #000;border-style:none solid solid none;}
+            .label     {font-weight:bold;}
+            .label-row {background:rgb(255, 244, 47)}
+            .label-col {background:rgb(163, 255, 47)}
+            .value     {background:#fff;color:blue;}
+            .value-calc{color:#F90000;}
+            .calc-col  {background:rgb(163, 255, 47);}
+            .calc-row  {background:rgb(255, 244, 47);}
+        </style>
+    </head>
+    <body>
+        <table cellpadding="2">
+            <tr>
+                <td>DATA IN</td>
+                <td>DATA OUT</td>
+                <td>HTML TABLE PLUGIN</td>
+            </tr>
+            <tr>
+                <td valign="top"><pre id="in"></pre></td>
+                <td valign="top"><pre id="out"></pre></td>
+                <td valign="top"><pre id="table"></pre></td>
+            </tr>
+        </table>
+        
+        <script>
+            
+            var cube, chart;
+
+            cube = CubeJS(dados_def);
+            cube.addOperation('op1', 'calculatedCol', {position:'after', reference:'1º BPM', expression:'$CELL($r,$c-1)+50000', label:'CALC'});
+            cube.addOperation('op2', 'totalCol', {label:'TOTAL'});
+            cube.addOperation('op3', 'totalRow', {label:'TOTAL'});
+            cube.data(dados_result);
+            cube.process();
+            
+            
+            document.getElementById('in').innerHTML = syntaxHighlight(JSON.stringify(dados_result, null, 4));
+            document.getElementById('out').innerHTML = syntaxHighlight(JSON.stringify(cube.data(), null, 4));
+            document.getElementById('table').innerHTML = cube.htmlTable();
+            
+            //chart= cube.d3();
+            //chart.render('bar');
+
+        </script>        
+    </body>
+</html>
