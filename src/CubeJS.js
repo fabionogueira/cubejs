@@ -25,6 +25,7 @@ var CubeJS;
             render     : function(htmlElement, viewName){
                 var view = this._views[viewName];
                 if (view){
+                    htmlElement = typeof(htmlElement)==='string' ? document.getElementById(htmlElement) : htmlElement;
                     view.apply(this, [htmlElement]);
                 }
                 return this;
@@ -43,7 +44,8 @@ var CubeJS;
                         position : options.position || 'after', /*after ou before*/
                         reference: options.reference,
                         label    : options.label || id,
-                        value    : options.expression ? compilerExpression(options.expression) : noop
+                        value    : options.expression ? compilerExpression(options.expression) : noop,
+                        summary  : options.summary
                     };
                     this._operations.push(op);
                     o.create(instance, op);
@@ -215,8 +217,9 @@ var CubeJS;
                 c = i+cube.rows.levels;
                 
                 r[c] = {
-                    value: v,
-                    calc : 'row'
+                    value  : v,
+                    calc   : 'row',
+                    summary: obj.summary
                 };
                 
                 //atualiza cube.data
@@ -235,8 +238,9 @@ var CubeJS;
                     v = obj.value(i,j,functions,instance);
                     
                     mt[r][col] = {
-                        value: v,
-                        calc : 'col'
+                        value    : v,
+                        calc     : 'col',
+                        summary: obj.summary
                     };
                 
                     //atualiza cube.data

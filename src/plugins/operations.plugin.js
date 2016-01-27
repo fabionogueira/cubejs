@@ -24,7 +24,7 @@
             init: function(instance, op){
                 var o, data=instance._cube;
                 
-                o = {calculated:true, type:'calculatedCol', id:op.id, label:op.label, position:op.position, value:doTotalCol};
+                o = {calculated:true, type:'calculatedCol', id:op.id, label:op.label, position:op.position, value:doTotalCol, summary:true};
                 data.cols.children.push(o);
             }
         })
@@ -33,7 +33,7 @@
             init: function(instance, op){
                 var o, data=instance._cube;
                 
-                o = {calculated:true, type:'calculatedRow', id:op.id, label:op.label, position:op.position, value:doTotalRow};
+                o = {calculated:true, type:'calculatedRow', id:op.id, label:op.label, position:op.position, value:doTotalRow, summary:true};
                 data.rows.children.push(o);
             }
         });
