@@ -1,56 +1,14 @@
-CubeJS = (function(){
-    
-    var plugins = {};
-    var CubeJS = function(cube, usePlugins){
-        var i, j, p, instance;
-        
-        usePlugins = usePlugins || [];
-        
-        instance = {};
-        
-        for (i=0; i<usePlugins.length; i++){
-            p = plugins[i];
-            
-            for (j in p){
-                if (j==='init') {
-                    cube = p.init(cube);
-                }else{
-                    instance[j]=p[j];
-                }
-            }
-        }
-        
-        return instance;
-    };
-    
-    //static methods:
-    CubeJS.plugin = function(name, plugin){
-        plugins[name] = plugin;
-    };
-    
-    return CubeJS;
-}());
-
-//converte o cubo de es para cubejs
-CubeJS.plugin('es', function(instance){
-    
-    this._cube = this._cube;
-    
-});
-
 (function(){
     var charts = {};
     
     //provê gráficos c3
-    CubeJS.plugin('c3', function(instance){
-
-        return {
-            render: render
+    CubeJS.plugin('c3', function(){
+        this.render = function(element, name){
+            
         };
-
     });
     
-    charts['bar'] = function(){
+    charts['bar'] = function(cube){
         var categories, series;
 
         //se options.orientation=horizontal as barras ficam na horizontal
@@ -106,6 +64,3 @@ CubeJS.plugin('es', function(instance){
     }
     
 }());
-
-chart = CubeJS(cube).es().d3();
-chart.render('bar');
