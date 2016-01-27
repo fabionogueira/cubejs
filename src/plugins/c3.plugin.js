@@ -3,14 +3,17 @@
     
     //provê gráficos c3
     CubeJS.plugin('c3', function(){
-        this.render = function(element, name){
-            
-        };
+        this._views['bar']         = barChart;
+        //this._views['column']      = columnChart;
+        //this._views['line']        = lineChart;
+        //this._views['area']        = areaChart;
+        //this._views['combination'] = areaCombination;
     });
     
-    charts['bar'] = function(cube){
+    function barChart(element){
         var categories, series;
-
+        
+        //this=instance
         //se options.orientation=horizontal as barras ficam na horizontal
 
         categoriesAndSeries(cube, function(cat, ser){
@@ -19,7 +22,7 @@
         });   
 
         return c3.generate({
-            bindto: options.renderTo,
+            bindto: element,
             data: {
                 columns: series,
                 type: 'bar'

@@ -21,6 +21,14 @@ var CubeJS;
             _operations: [],
             _mapRows   : {},
             _mapCols   : {},
+            _views     : {},
+            render     : function(htmlElement, viewName){
+                var view = this._views[viewName];
+                if (view){
+                    view.apply(this, [htmlElement]);
+                }
+                return this;
+            },
             definition: function(){return this;},
             cube: function(){},
             addOperation: function(id, name, options){

@@ -9,8 +9,9 @@
         <script src="../src/plugins/operations.plugin.js" type="text/javascript"></script>
         <script src="../src/plugins/functions.plugin.js" type="text/javascript"></script>
         <script src="../src/plugins/table.plugin.js" type="text/javascript"></script>
+        <script src="../src/plugins/c3.plugin.js" type="text/javascript"></script>
         
-        <script src="responses/dados4.js" type="text/javascript"></script>
+        <script src="responses/dados.js" type="text/javascript"></script>
         <script src="syntaxHighlight.js" type="text/javascript"></script>
         
         <style>
@@ -27,6 +28,7 @@
             .label     {font-weight:bold;}
             .label-row {background:rgb(255, 244, 47)}
             .label-col {background:rgb(163, 255, 47)}
+            .label-calc{color:#F90000;}
             .value     {background:#fff;color:blue;}
             .value-calc{color:#F90000;}
             .calc-col  {background:rgb(163, 255, 47);}
@@ -43,7 +45,7 @@
             <tr>
                 <td valign="top"><pre id="in"></pre></td>
                 <td valign="top"><pre id="out"></pre></td>
-                <td valign="top"><pre id="table"></pre></td>
+                <td valign="top" id="table"></td>
             </tr>
         </table>
         
@@ -61,7 +63,9 @@
             
             document.getElementById('in').innerHTML = syntaxHighlight(JSON.stringify(dados_result, null, 4));
             document.getElementById('out').innerHTML = syntaxHighlight(JSON.stringify(cubeInstance.cube(), null, 4));
-            document.getElementById('table').innerHTML = cubeInstance.htmlTable();
+            //document.getElementById('table').innerHTML = cubeInstance.htmlTable();
+            
+            cubeInstance.render(document.getElementById('table'), 'table');
             
             //chart= cube.d3();
             //chart.render('bar');

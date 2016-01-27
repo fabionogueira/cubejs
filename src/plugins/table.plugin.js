@@ -4,7 +4,12 @@
         this.htmlTable = function(){
             return toHTML(this);
         };
+        this._views['table'] = tableView;
     });
+    
+    function tableView(element){
+        element.innerHTML = toHTML(this);
+    }
     
     function toHTML(instance){
         var
@@ -31,9 +36,14 @@
                 }
             }
             
+            if (obj){
+                cls += obj.calculated ? ' calc-'+obj.calc+' label-calc': '';
+                cls += obj.calc ? ' calc-'+obj.calc+' value-calc': '';
+            }
+            
             v = (obj ? obj.label || obj.value : null);
             
-            return '<td class="'+cls+(obj&&obj.calc?' calc-'+obj.calc:'')+'">'+(v===null||v===undefined?'':v)+'</td>';
+            return '<td class="'+cls+'">'+(v===null||v===undefined?'':v)+'</td>';
         }
         
         html = '<table class="table" border="0" cellpadding="3" cellspacing="0">';
