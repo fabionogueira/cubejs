@@ -85,10 +85,9 @@ dados_def = {
         "dm_natureza":{type:"dimension"}
     },
     cols: {
-        "dm_upm":     {type:"dimension"},
-        "qtd_armas":  {type:"measure"},
-        "qtd_presos": {type:"measure"}
+        "dm_upm":     {type:"dimension", index:0},
+        "qtd_armas":  {type:"measure", index:1},
+        "qtd_presos": {type:"measure", index:2}
     }
     
 };
-

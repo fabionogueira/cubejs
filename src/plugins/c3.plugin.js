@@ -11,16 +11,22 @@
     });
     
     function columnChart(element){
-        var data = getSingleSeries(this);
+        var series = getSeries(this),
+            categories = getColCategories(this);
         
-        getCategories(this);
-        console.log(data, this);
+        series.splice(0,0,categories);
         
         return c3.generate({
             bindto: element,
             data: {
-                columns: data,
+                x:'x',
+                columns: series,
                 type: 'bar'
+            },
+            axis: {
+                x: {
+                    type: 'category'
+                }
             }
         });
     };
@@ -38,34 +44,17 @@
             }
         });
     };
-    function categoriesAndSeries(cube, fn){
-        var
-            i, nc, ns,
-            categories = cube.categories('col'),
-            series     = cube.series('row');
-
-        if (categories.length===0){
-            nc = [];
-            ns = [['count']];
-            for (i=0; i<series.length; i++){
-                nc.push(series[i][0]);
-                ns[0].push(series[i][1]);
-            }
-            categories = nc;
-            series = ns;
-        }
-        
-        fn(categories, series);
-    }
-    function getSingleSeries(instance){
-        var x, y, d, r, cs, mt = instance._matrix,
+    
+    function getSeries(instance){
+        var i, x, y, d, r, cs, categories, mt = instance._matrix,
             series = [];
         
-        //séries
+        categories = getRowCategories(instance);
+        
         cs=-1;      
-        for (y=instance._cube.cols.levels; y<mt.length; y++){
-            r = [];
-            for (x=instance._cube.rows.levels-1; x<mt.colsLength; x++){
+        for (i=0,y=instance._cube.cols.levels; y<mt.length; y++,i++){
+            r = [categories[i]];
+            for (x=instance._cube.rows.levels; x<mt.colsLength; x++){
                 d = mt[y][x];
                 
                 if (x===cs) continue;
@@ -86,76 +75,55 @@
         
         return series;
     }
-    function getCategories(instance){
-        var i, j, y = 0, x = 0, a = [], r = instance._matrix[0];
+    function getColCategories(instance){
+        var i, k = 1, a = ['x'], cols = instance._cube.cols;
         
-        
-        for (i=instance._cube.rows.levels; i<r.length; i++){
-            if (r[i]){
-                a[x] = getLabel(r[i]);
-            }
+        for (i=0; i<cols.children.length; i++){
+            process(cols.children[i], '');
         }
         
-        console.log(a);
+        return a;
         
-        return;
-        
-        var x, y, d, r, l, i, cs, mt = instance._matrix,
-            categories = [];
-        
-        cs=-1;
-        y=0;
-        r = [];
-        for (x=0; x<mt.colsLength; x++){
-            d = mt[y][x];
-
-            if (x===cs) continue;
-
-            if (d){
-                if (d.summary) {
-                    cs=x;
-                }else{
-                    l = d.label;
-                    while (d.children){
-                        for (i=0; i<d.children.length; i++){
-                            l
-                        }
-                    }
-                    r.push(l);
+        function process(obj, pl){
+            var l, children;
+            
+            l = pl+obj.label;
+            children = obj.children;
+            
+            if (children){
+                process(children[0], l+' ');
+                for (var j=1; j<children.length; j++){
+                    process(children[j], l+' ');
                 }
             }else{
-                r.push(0);
-            }
-
-        }
-        if (r.length>0) series.push(r);
-
-        
-        return series;
-    }
-    function getLabel(obj){
-        var l=obj.label;
-        
-        if (obj.children && obj.children.length>0){
-            l += ' ' + getLabel(obj.children[0]);
-        }
-        
-        return l;
-    }
-    function processCol(arr, obj, x, label){
-        var i;
-        
-        label = label + (label==='' ? '' : ' ') + obj.label;
-        
-        if (obj.children && obj.children.length>0){
-            label = processCol(arr, obj.children[0], x, label);
-            for (i=1; i<obj.children.length; i++){
-                processCol(arr, obj.children[i], x+1, label);
+                a[k++] = l;
             }
         }
-        
-        arr[x] = label;
-        
-        return label;
     }
+    function getRowCategories(instance){
+        var i, k = 0, a = [], rows = instance._cube.rows;
+        
+        for (i=0; i<rows.children.length; i++){
+            process(rows.children[i], '');
+        }
+        
+        return a;
+        
+        function process(obj, pl){
+            var l, children;
+            
+            l = pl+obj.label;
+            children = obj.children;
+            
+            if (children){
+                process(children[0], l+' ');
+                for (var j=1; j<children.length; j++){
+                    process(children[j], l+' ');
+                }
+            }else{
+                a[k++] = l;
+            }
+        }
+    }
+    
 }());

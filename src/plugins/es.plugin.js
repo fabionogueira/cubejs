@@ -35,8 +35,119 @@
         return q+j;
     }
     function query(def){
-        //retorna a query ES referente a definition
-        return 'query elasticsearch';
+        
+        //console.log(def);
+        return;
+        //prepara o json de envio
+        var i, k, d, p, v, o, o1, o2, o3, o4,
+            a = [],
+            b = [],
+            c = [],
+            json={size:0};
+
+        //coloca as variáveis na ordem linhas, colunas, métricas
+        for (i=0; i<def.cols.length; i++){
+            a.push(def.cols[i]);
+        }
+        for (i=0; i<options.rows.length; i++){
+            a.push(options.rows[i]);
+        }
+
+        function itemAggs(aggsObj, name){
+            var
+                p, v, k, d, o2, o3, o4;
+
+            p = name.split('.');
+            v = name.replace('.', '_');
+            k = p[0];
+            d = options.dimensions[k];
+            o2= aggsObj.aggs = {};
+            o3= o2[v] = {};
+
+            switch (d.type){
+                case 'date':
+                    o4 = o3.date_histogram = {
+                        field: k
+                    };
+                    switch (p[1]){
+                        case 'year':
+                            o4.interval = 'year';
+                            o4.format = 'yyy';
+                            break
+                    }
+                    break;
+
+                default:
+                    o3.terms = {
+                        field: a[i]
+                    };
+                    break;
+            }
+
+            return o3;
+        }
+
+        //cria o json ES a ser enviado
+        o1 = json;            
+        for (i=0; i<a.length; i++){
+            k = a[i].split('.')[0];
+            d = options.dimensions[k];
+
+            if (d){
+                if (d.nested){ //nested fica no final
+                    b.push(a[i]);
+                }else{
+                    o1 = itemAggs(o1, a[i]);
+                }
+            }else{
+                d = options.measures[k];
+                if (d){ //métricas ficam no final
+                    c.push(k);
+                }
+            }
+        }
+
+        //adiciona o nested
+        for (i=0; i<b.length; i++){
+            p = b[i].split('.');
+            v = b[i].replace('.', '_');
+            k = p[0];
+            d = options.dimensions[k];
+            o2 = o1.aggs = {};
+            o3 = o2[v] = {};
+
+            //tipos nested devem ficar no final
+            o2[v] = o = {
+                nested: {
+                    path: k
+                },
+                aggs:{}
+            };
+            o3 = o.aggs[v] = {};
+            o3.terms = {
+                field: b[i]
+            };
+        }
+
+        //adiciona as métricas
+        if (c.length>0){
+            o2 = o1.aggs = {};
+            for (i=0; i<c.length; i++){
+                d = vars[c[i]];
+                o3 = o2[c[i]] = {};
+                o3[d.aggs] = {
+                    field: c[i]
+                };
+            }
+        }
+
+        return {
+            url : '/_search',
+            type: 'POST',
+            dataType: 'json',
+            data: JSON.stringify(json)
+        };
+        
     }    
     function transform(definition, agg){
         var cube, mapCols={}, mapRows={}, i, x=0,y=0;
