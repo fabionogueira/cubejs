@@ -1,10 +1,11 @@
+
 (function(){
     
     CubeJS.plugin('htmlTable', function(){
         this.htmlTable = function(){
             return toHTML(this);
         };
-        this._views['table'] = tableView;
+        this._views.table = tableView;
     });
     
     function tableView(element){
