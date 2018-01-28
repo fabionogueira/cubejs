@@ -2,7 +2,7 @@ import CubeJS from '../CubeJS';
 
 function toHTML(cubeJs){
     let r, c, row, html;
-    let cube = cubeJs._cube;
+    let cube = cubeJs._data;
     let matrix = cubeJs._matrix;
     
     function createHTMLCell(r, c, obj){
@@ -33,7 +33,7 @@ function toHTML(cubeJs){
         return '<td class="' + cls + '">' + (v === null || v === undefined ? '' : v) + '</td>';
     }
     
-    html = '<table class="table" border="0" cellpadding="3" cellspacing="0">';
+    html = '<table class="table" border="1" cellpadding="3" cellspacing="0">';
     for (r = 0; r < matrix.rowsLength; r++){
         row = matrix[r];
         html += '<tr>';
@@ -47,13 +47,9 @@ function toHTML(cubeJs){
     return ('<pre>' + html + '</pre>');
 }
 
-function tableView(element){
-    element.innerHTML = toHTML(this);
-}
-
-CubeJS.plugin('htmlTable', function(){
-    this.htmlTable = function(){
-        return toHTML(this);
-    };
-    this._views.table = tableView;
+CubeJS.createPlugin('html.table', {
+    renderTo(element){
+        element.innerHTML = toHTML(this.cubeJS);
+        return element;
+    }
 });

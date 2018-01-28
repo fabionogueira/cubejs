@@ -1,6 +1,83 @@
-<div class="hbox" id="app">
-    <div class="app-left-panel">
-      <router-link to="/home">home</router-link>
+<div class="v-hbox" id="app" style="position:absolute;top:0;left:0;right:0;bottom:0;padding:10px;">
+    <div style="padding:10px">
+        <p><a href="#" v-on:click="setChart('column')">column</a></p>
+        <p><a href="#" v-on:click="setChart('bar')">bar</a></p>
+        <p><a href="#" v-on:click="setChart('column.stacked')">column.stacked</a></p>
+        <p><a href="#" v-on:click="setChart('bar.stacked')">bar.stacked</a></p>
+        <p><a href="#" v-on:click="setChart('line')">line</a></p>
     </div>
-    <router-view style="flex:1;position:relative;"></router-view>
+    <div class="v-vbox v-client">
+      <div class="v-hbox" style="height:300px">
+        <textarea ref="definition" class="v-client" style="margin:10px">
+{
+  rows: {
+      'dm_natureza':{type:'dimension'}
+  },
+  cols: {
+      'dm_upm':     {type:'dimension', index:0},
+      'qtd_armas':  {type:'measure', index:1},
+      'qtd_presos': {type:'measure', index:2}
+  }
+}
+        </textarea>
+        <textarea ref="result" class="v-client" style="margin:10px">
+{
+  aggregations: {
+      'dm_upm':{ // coluna
+          'buckets':[
+              {
+                  'key': '1º bpm', // x=0,y=0
+                  'doc_count': 2,
+                  'dm_natureza':{ // linha
+                      'buckets':[{
+                          'key': 'furto', // x=0,y=0
+                          'doc_count': 2,
+                          'qtd_armas':{ // métrica de coluna
+                              value: 0 // x=0,y=0
+                          },
+                          'qtd_presos':{ // métrica de coluna
+                              value: 4 // x=1,y=0
+                          }
+                      },
+                      {
+                          'key': 'homicídio', // x=0,y=1
+                          'doc_count': 2,
+                          'qtd_armas':{ // métrica de coluna
+                              value: 2 // x=0,y=1
+                          },
+                          'qtd_presos':{ // métrica de coluna
+                              value: 1 // x=1,y=1
+                          }
+                      }]
+                  }
+              },
+              {
+                  'key': '2º bpm', // x=2,y=0
+                  'doc_count': 2,
+                  'dm_natureza':{ // linha
+                      'buckets':[{
+                          'key': 'furto', // x=2,y=0
+                          'doc_count': 2,
+                          'qtd_armas':{ // métrica de coluna
+                              value: 1 // x=2,y=0
+                          },
+                          'qtd_presos':{ // métrica de coluna
+                              value: 2 // x=3,y=0
+                          }
+                      }]
+                  }
+              }
+          ]
+      }
+   }
+}
+        </textarea>
+      </div>
+      <div class="v-hbox v-client" id="chart"></div>
+    </div>
+
+    <!-- <div class="app-left-panel">
+      <router-link to="/home">home</router-link>
+    </div> -->
+    <!-- <router-view style="flex:1;position:relative;"></router-view> -->
 </div>

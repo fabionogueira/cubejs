@@ -1,13 +1,11 @@
-// provê gráficos c3
-
 import CubeJS from '../CubeJS';
 
-const c3 = window.c3;
+const Plotly = window.Plotly;
 
 function getColCategories(data){
     let i;
-    let k = 1;
-    let a = ['x'];
+    let k = 0;
+    let a = [];
     let cols = data.cols;
     
     function process(obj, pl){
@@ -60,7 +58,7 @@ function getRowCategories(data){
     
     return a;
 }
-function getSeries(instance){
+function getSeries(instance, colsCategories, type){
     let i, x, y, d, r, cs, categories;
     let mt = instance._matrix;
     let series = [];
@@ -71,7 +69,12 @@ function getSeries(instance){
     cs = -1;      
 
     for (i = 0, y = data.cols.levels; y < mt.length; y++, i++){
-        r = [categories[i]];
+        r = {
+            x: colsCategories,
+            y: [],
+            name: categories[i],
+            type: type || 'bar'
+        };
 
         for (x = data.rows.levels; x < mt.colsLength; x++){
             d = mt[y][x];
@@ -82,15 +85,15 @@ function getSeries(instance){
                 if (d.summary) {
                     cs = x;
                 } else {
-                    r.push(d.category || d.calculated || d.measure ? d.label : d.value);
+                    r.y.push(d.category || d.calculated || d.measure ? d.label : d.value);
                 }
             } else {
-                r.push(0);
+                r.y.push(0);
             }
             
         }
 
-        if (r.length > 0) {
+        if (r.y.length > 0) {
             series.push(r);
         }
     }
@@ -98,43 +101,54 @@ function getSeries(instance){
     return series;
 }
 
-function columnChart(element, cubeJs){
-    let series = getSeries(cubeJs);
+function columnChart(element, cubeJs, layout, orientation, type){
     let categories = getColCategories(cubeJs._data);
+    let series = getSeries(cubeJs, categories, type);
     
-    series.splice(0, 0, categories);
-    
-    return c3.generate({
-        bindto: element,
-        data: {
-            x:'x',
-            columns: series,
-            type: 'bar'
-        },
-        axis: {
-            x: {
-                type: 'category'
-            }
+    series.forEach(serie => {
+        let x = serie.x;
+
+        if (orientation == 'h'){
+            serie.orientation = orientation;
+            serie.x = serie.y;
+            serie.y = x;
         }
     });
-}
-function barChart(element){
-    var data = null; // getSingleSeries(this);
-    
-    return c3.generate({
-        bindto: element,
-        data: {
-            columns: data,
-            type: 'bar'
-        },
-        axis: {
-            rotated: true
-        }
-    });
+
+    return Plotly.newPlot(element, series, layout);
 }
 
-CubeJS.createPlugin('c3.column', {
+CubeJS.createPlugin('plotly.column', {
     renderTo(element){
-        return columnChart(element, this.cubeJS);
+        let layout = {barmode: 'group'};
+        return columnChart(element, this.cubeJS, layout);
+    }
+});
+
+CubeJS.createPlugin('plotly.bar', {
+    renderTo(element){
+        let layout = {barmode: 'group'};
+        return columnChart(element, this.cubeJS, layout, 'h');
+    }
+});
+
+CubeJS.createPlugin('plotly.column.stacked', {
+    renderTo(element){
+        let layout = {barmode: 'stack'};
+        return columnChart(element, this.cubeJS, layout);
+    }
+});
+
+CubeJS.createPlugin('plotly.bar.stacked', {
+    renderTo(element){
+        let layout = {barmode: 'stack'};
+        return columnChart(element, this.cubeJS, layout, 'h');
+    }
+});
+
+CubeJS.createPlugin('plotly.line', {
+    renderTo(element){
+        let layout = {};
+        return columnChart(element, this.cubeJS, layout, null, 'scatter');
     }
 });

@@ -5,6 +5,7 @@
     "latedef": true,
     "browser": true,
     "globals": {
+        "Plotly": true,
         "require": true,
         "module": true,
         "console": true,

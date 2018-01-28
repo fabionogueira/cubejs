@@ -1,10 +1,11 @@
 import Vue from 'vue';
 import CubeJS from '../../../src/index.js';
+import ElasticAdapter from '../../../src/adapters/ElasticAdapter';
 
 export default Vue.component('home', {
     template: require('./homeView.html'),
     mounted(){
-        let dadosDef = {
+        let definition = {
             rows: {
                 'dm_natureza':{type:'dimension'}
             },
@@ -13,7 +14,6 @@ export default Vue.component('home', {
                 'qtd_armas':  {type:'measure', index:1},
                 'qtd_presos': {type:'measure', index:2}
             }
-            
         };
         let dadosResult = {
             aggregations: {
@@ -66,11 +66,59 @@ export default Vue.component('home', {
             }
         };
 
-        let cube = CubeJS.create(dadosDef);
+        // instance
+        let cube = new CubeJS({
+            definition: definition,
+            dataAdapter: ElasticAdapter 
+        });
 
-        cube.cube(dadosResult);
-        cube.process();
-        cube.render('chart1', 'table');
+        // set data
+        cube.setData(dadosResult);
+        
+        // plugin html.table renderer
+        // cube.plugin('html.table').renderTo(document.getElementById('chart1'));
+
+        // plugin c3.column
+        // cube.plugin('c3.column').renderTo(document.getElementById('chart2'));
+
+        this.plotly2(cube);
+    },
+
+    methods: {           
+        plotly1(){
+            var data = [
+                {
+                    x: ['giraffes', 'orangutans', 'monkeys'],
+                    y: [20, 14, 23],
+                    type: 'bar'
+                }
+            ];
+            
+            window.Plotly.newPlot(document.getElementById('chart3'), data);
+        },
+
+        plotly2(cube){
+            // var trace1 = {
+            //     x: ['1º bpm qtd_armas', '1º bpm qtd_pessoas', '2º bpm qtd_armas', '2º bpm qtd_pessoas'],
+            //     y: [0, 4, 1, 2],
+            //     name: 'furto',
+            //     type: 'bar'
+            // };
+            
+            // var trace2 = {
+            //     x: ['1º bpm qtd_armas', '1º bpm qtd_pessoas', '2º bpm qtd_armas', '2º bpm qtd_pessoas'],
+            //     y: [2, 1, 0, 0],
+            //     name: 'homicidio',
+            //     type: 'bar'
+            // };
+            
+            // var data = [trace1, trace2];
+            // var layout = {barmode: 'group'};
+            
+            // cube.plugin('plotly.column').renderTo(document.getElementById('chart3'));
+            cube.plugin('plotly.line').renderTo(document.getElementById('chart1'));
+
+            // window.Plotly.newPlot(document.getElementById('chart3'), data, layout);
+        }
     }
-
 });

@@ -1,8 +1,6 @@
 /* jshint latedef: nofunc */
 // converte o cubo de es para cubejs
 
-import CubeJS from '../CubeJS';
-
 function getLevel(def){
     let i;
     let j = 0;
@@ -181,26 +179,141 @@ function transform(definition, agg){
     return cube;
 }
 
-CubeJS.plugin('es', function(){
-    this.definition = function(definition){
-        this._definition = definition;
-        return this.cube(this._cube);
-    };
-    this.cube = function(cube){
-        if (arguments.length == 0) {
-            return this._cube;
+/**
+ * Transforma dados de resposta do elasticsearch para um formato de matriz
+ * @param cubejs CubeJS
+ * @param data Object
+ */
+// export default function ElasticAdapter (cubejs, data) {
+//     if (data && !data.__es__) {
+//         data = transform(cubejs.getDefinition(), data.aggregations);
+//         data.__es__ = true;
+//     }
+    
+//     return data;
+// }
+
+export default {
+    request(cubejs, data){
+        if (data && !data.__es__) {
+            data = transform(cubejs.getDefinition(), data.aggregations);
+            data.__es__ = true;
         }
         
-        if (cube && this._definition && !cube.__es__){
-            this._cube = transform(this._definition, cube.aggregations);
-            cube.__es__ = true;
+        return data;
+    },
+
+    // prepara o json de envio
+    response(cubejs, options){
+        let i, k, d, p, v, o, o1, o2, o3;
+        let a = [];
+        let b = [];
+        let c = [];
+        let json = {size:0};
+        
+        // _cols = options.cols;
+        // _rows = options.rows;
+        
+        // coloca as variáveis na ordem linhas, colunas, métricas
+        for (i = 0; i < options.cols.length; i++){
+            a.push(options.cols[i]);
+        }
+        for (i = 0; i < options.rows.length; i++){
+            a.push(options.rows[i]);
         }
         
-        return this;
-    };
-    this.query = function(){
-        if (this._definition){
-            return '';// query(this._definition);
+        function itemAggs(aggsObj, name){
+            let p, v, k, d, o2, o3, o4;
+                
+            p = name.split('.');
+            v = name.replace('.', '_');
+            k = p[0];
+            d = options.dimensions[k];
+            o2 = aggsObj.aggs = {};
+            o3 = o2[v] = {};
+                
+            switch (d.type){
+            case 'date':
+                o4 = o3.date_histogram = {
+                    field: k
+                };
+                switch (p[1]){
+                case 'year':
+                    o4.interval = 'year';
+                    o4.format = 'yyy';
+                    break;
+                }
+                break;
+
+            default:
+                o3.terms = {
+                    field: a[i]
+                };
+                break;
+            }
+            
+            return o3;
         }
-    };
-});
+        
+        // cria o json ES a ser enviado
+        o1 = json;            
+        for (i = 0; i < a.length; i++){
+            k = a[i].split('.')[0];
+            d = options.dimensions[k];
+            
+            if (d){
+                if (d.nested){ // nested fica no final
+                    b.push(a[i]);
+                } else {
+                    o1 = itemAggs(o1, a[i]);
+                }
+            } else {
+                d = options.measures[k];
+                if (d){ // métricas ficam no final
+                    c.push(k);
+                }
+            }
+        }
+        
+        // adiciona o nested
+        for (i = 0; i < b.length; i++){
+            p = b[i].split('.');
+            v = b[i].replace('.', '_');
+            k = p[0];
+            d = options.dimensions[k];
+            o2 = o1.aggs = {};
+            o3 = o2[v] = {};
+            
+            // tipos nested devem ficar no final
+            o2[v] = o = {
+                nested: {
+                    path: k
+                },
+                aggs:{}
+            };
+            o3 = o.aggs[v] = {};
+            o3.terms = {
+                field: b[i]
+            };
+        }
+        
+        // adiciona as métricas
+        if (c.length > 0){
+            // o2 = o1.aggs = {};
+            // for (i = 0; i < c.length; i++){
+            //     d = vars[c[i]];
+            //     o3 = o2[c[i]] = {};
+            //     o3[d.aggs] = {
+            //         field: c[i]
+            //     };
+            // }
+        }
+        
+        return {
+            url : '/_search',
+            type: 'POST',
+            dataType: 'json',
+            data: JSON.stringify(json)
+        };        
+    }
+};
