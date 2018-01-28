@@ -127,7 +127,7 @@ function transform(definition, agg){
         x = mapCols[k].x;
         
         cube.data[y] = cube.data[y] || [];
-        cube.data[y][x] = {value:bucket.value};
+        cube.data[y][x] = {value: (bucket.value === undefined ? bucket : bucket.value)};
         
         if (cube.data.collength < cube.data[y].length) cube.data.collength = cube.data[y].length;
     }
@@ -141,7 +141,7 @@ function transform(definition, agg){
         y = mapRows[k].y;
         
         cube.data[y] = cube.data[y] || [];
-        cube.data[y][x] = {value:bucket.value};
+        cube.data[y][x] = {value:bucket.value || bucket};
         
         if (cube.data.collength < cube.data[y].length) cube.data.collength = cube.data[y].length;
     }

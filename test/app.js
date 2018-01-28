@@ -26,8 +26,12 @@ export default Vue.component('app', {
             // set data
             cube.setData(dadosResult);
 
+            cube.plugin('html.table')
+                .renderTo(document.getElementById('table'));
+
             cube.plugin(`plotly.${type}`)
-                .renderTo(document.getElementById('chart'));            
+                .renderTo(document.getElementById('chart'));
+            
         }
     }
 });

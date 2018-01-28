@@ -240,7 +240,8 @@ class CubeJS{
                 this._formatValue(cell, this._format);
             }
         }
-    
+        
+        // calcula os valores das operações de linhas e colunas
         for (i = 0; i < ops.length; i++){
             op = ops[i];
             a = calculatedCells[op.id];
