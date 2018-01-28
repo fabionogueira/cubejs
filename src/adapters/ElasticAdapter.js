@@ -194,7 +194,7 @@ function transform(definition, agg){
 // }
 
 export default {
-    request(cubejs, data){
+    response(cubejs, data){
         if (data && !data.__es__) {
             data = transform(cubejs.getDefinition(), data.aggregations);
             data.__es__ = true;
@@ -204,7 +204,7 @@ export default {
     },
 
     // prepara o json de envio
-    response(cubejs, options){
+    request(cubejs, options){
         let i, k, d, p, v, o, o1, o2, o3;
         let a = [];
         let b = [];

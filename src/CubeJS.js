@@ -29,7 +29,7 @@ class CubeJS{
 
     setData(data){
         if (data && !data.__processed__) {
-            this._data = this._adapter ? this._adapter.request(this, data) : data;
+            this._data = this._adapter ? this._adapter.response(this, data) : data;
             this._initOperations();
             this._createMatrix();
             data.__processed__ = true;
