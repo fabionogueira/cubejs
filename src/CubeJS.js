@@ -6,16 +6,19 @@ let operations = {};
 let plugins = {};
 let noop = function(){};
 
+const FORMAT = {
+    precision: 2,
+    prefix   : '',
+    suffix   : '',
+    decimal  : '.',
+    thousand : ','
+};
+
 class CubeJS{
     constructor(options){
-        this._format = {
-            precision: 2,
-            prefix   : '',
-            suffix   : '',
-            decimal  : '.',
-            thousand : ','
-        };
-        
+
+        this._format = Object.assign(FORMAT, options.format || {});
+
         this._operations = [];
         this._mapRows = {};
         this._mapCols = {};
@@ -42,11 +45,21 @@ class CubeJS{
         return this._data;
     }
 
+    getMatrix(){
+        return this._data.data;
+    }
+
     addOperation(id, name, options) {
-        let op;
+        let op, fn;
         let o = operations[name];
         
         if (o){
+            if (typeof (options.expression) == 'function'){
+                fn = options.expression;
+            } else {
+                fn = options.expression ? this._compilerExpression(options.expression) : function(){ return null; };
+            }
+
             op = {
                 id       : id,
                 type     : name,
@@ -54,7 +67,7 @@ class CubeJS{
                 position : options.position || 'after', /* after ou before */
                 reference: options.reference,
                 label    : options.label || id,
-                value    : options.expression ? this._compilerExpression(options.expression) : function(){},
+                value    : fn,
                 summary  : options.summary
             };
             this._operations.push(op);
@@ -287,7 +300,7 @@ class CubeJS{
     _formatValue(cell){
         let v, a;
     
-        if (cell){
+        if (cell && typeof (cell.value) == 'number'){
             v = cell.value.toFixed(this._format.precision);
             a = v.split('.');
             v = a[0].replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1' + this._format.thousand) + (a[1] ? this._format.decimal + a[1] : '');

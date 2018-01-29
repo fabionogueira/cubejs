@@ -7,15 +7,16 @@ CubeJS
         let ro, co;
         let mc = this._mapCols;
         let mr = this._mapRows;
+        let cube = this._data;
         
         if (typeof (r) == 'string'){
-            r = mr[r] - this._cube.cols.levels;
+            r = mr[r] - cube.cols.levels;
         }
         if (typeof (c) == 'string'){
-            c = mc[c] - this._cube.rows.levels;
+            c = mc[c] - cube.rows.levels;
         }
 
-        ro = this._cube.data[r];
+        ro = cube.data[r];
         co = ro ? ro[c] : null;
 
         return co ? co.value : null;

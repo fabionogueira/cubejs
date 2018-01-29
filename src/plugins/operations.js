@@ -7,7 +7,14 @@ function doCalcOperation(op, obj, parent, index){
 
     if (obj.id == op.reference) {
 
-        o = {calculated:true, type:op.type, id:op.id, label:op.label, position:op.position, value:op.value};
+        o = {
+            calculated: true, 
+            type: op.type, 
+            id: op.id, 
+            label: op.label, 
+            position: op.position, 
+            value:op.value
+        };
 
         if (op.position == 'after'){ // after
             parent.splice(++index, 0, o);
@@ -27,7 +34,7 @@ function doCalcOperation(op, obj, parent, index){
 function doTotalCol(y, x){
     let i, r, c;
     let s = 0;
-    let m = arguments[3]._cube.data;
+    let m = arguments[3]._data.data;
     
     r = m[y];
     
@@ -41,7 +48,7 @@ function doTotalCol(y, x){
 function doTotalRow(y, x){
     let i, c;
     let s = 0;
-    let m = arguments[3]._cube.data;
+    let m = arguments[3]._data.data;
     
     for (i = 0; i < m.length; i++){
         c = m[i][x];
@@ -55,7 +62,7 @@ CubeJS
     .createOperation('calculatedRow', {
         init(instance, op){
             let i;
-            let data = instance._cube;
+            let data = instance.getData();
 
             for (i = 0; i < data.rows.children.length; i++){
                 i = doCalcOperation(op, data.rows.children[i], data.rows.children, i);
@@ -65,7 +72,7 @@ CubeJS
     .createOperation('calculatedCol', {
         init(cubeJs, op){
             let i;
-            let data = cubeJs._cube;
+            let data = cubeJs.getData();
 
             for (i = 0; i < data.cols.children.length; i++){
                 i = doCalcOperation(op, data.cols.children[i], data.cols.children, i);
@@ -76,7 +83,7 @@ CubeJS
         priority: 20, // quanto maior a prioridade será executado mais para o final
         init: function(cubeJs, op){
             let o;
-            let data = cubeJs._cube;
+            let data = cubeJs.getData();
             
             o = {
                 calculated: true, 
@@ -95,7 +102,7 @@ CubeJS
         priority: 20,
         init(cubeJs, op){
             let o;
-            let data = cubeJs._cube;
+            let data = cubeJs.getData();
             
             o = {
                 calculated: true, 

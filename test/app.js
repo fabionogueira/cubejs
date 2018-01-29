@@ -22,7 +22,20 @@ export default Vue.component('app', {
                 definition: definition,
                 dataAdapter: ElasticAdapter 
             });
-    
+            
+            cube.addOperation('op1', 'totalRow', {label:'Total'});
+            cube.addOperation('op2', 'totalCol', {label:'Total'});
+            cube.addOperation('op3', 'calculatedCol', {
+                label:'Custom',
+                reference: '1º bpm',
+                position: 'after',
+                expression(x, y, Functions, cubeJS){
+                    let v = (Functions.CELL.apply(cubeJS, [x, '1º bpm$qtd_armas']));
+                    return v * 2;
+                }
+
+            });
+
             // set data
             cube.setData(dadosResult);
 

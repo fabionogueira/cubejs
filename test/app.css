@@ -10,3 +10,13 @@ v-vbox[layout="space-between"], v-hbox[layout="space-between"], .v-vbox[layout="
 v-vbox[layout="center center"], v-hbox[layout="center"],        .v-vbox[layout="center center"], .v-hbox[layout="center"]       {justify-content:center; align-items:center;}
 
 v-spacer, .v-spacer{flex-grow: 1;}
+
+.label-col {
+    background: rgba(255, 235, 59, 0.36);
+}
+.label-row {
+    background: rgba(33, 150, 243, 0.28);
+}
+.label-calc, .value-calc{
+    font-weight: bold;
+}
