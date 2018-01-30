@@ -54,6 +54,7 @@ cube.plugin(`plotly.${type}`)
 
 ## clone
 ```
-git clone https://github.com/fabionogueira/cubejs cubejs
+git clone https://github.com/fabionogueira/cubejs jscube
+cd jscube
 npm start
 ```
