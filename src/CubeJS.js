@@ -33,8 +33,10 @@ class CubeJS{
     setData(data){
         if (data && !data.__processed__) {
             this._data = this._adapter ? this._adapter.response(this, data) : data;
+            
             this._initOperations();
             this._createMatrix();
+
             data.__processed__ = true;
         }
 
@@ -52,9 +54,10 @@ class CubeJS{
     addOperation(id, name, options) {
         let op, fn;
         let o = operations[name];
+        let type = typeof (options.expression);
         
         if (o){
-            if (typeof (options.expression) == 'function'){
+            if (type == 'function'){
                 fn = options.expression;
             } else {
                 fn = options.expression ? this._compilerExpression(options.expression) : function(){ return null; };
@@ -68,6 +71,7 @@ class CubeJS{
                 reference: options.reference,
                 label    : options.label || id,
                 value    : fn,
+                custom   : type === 'function',
                 summary  : options.summary
             };
             this._operations.push(op);
@@ -103,16 +107,18 @@ class CubeJS{
     }
 
     _compilerExpression(exp){
-        // let i;
+        let i, r, c;
+
+        // $CELL(1,2) = $CELL.call($s, 1, 2)
         
-        // for (i in functions){
-        exp = exp.replace(/\$CELL\s*\([\w\W]*\)/g, function(txt){
-            let a = txt.split('(');                
-            return '$f.' + a[0].substring(1) + '.apply($s,[' + a[1].substring(0, a[1].length - 1) + '])';
-        });
-        // }
+        for (i in functions) {
+            r = new RegExp(`\\${i}\\s*\\(`, 'g');
+            c = `$f.${i}.call(this,`;
+
+            exp = exp.replace(r, c);
+        }
         
-        return Function('$r', '$c', '$f', '$s', 'return ' + exp);
+        return Function('$r', '$c', '$f', 'return ' + exp);
     }
     
     _createMatrix(){
@@ -123,7 +129,7 @@ class CubeJS{
         ops = this._operations;
         mapCols = this._mapCols;
         mapRows = this._mapRows;
-        dataColsLength = cube.data.collength;
+        dataColsLength = 0; // cube.data.collength;
         dataRowsLength = cube.data.length;
         calculatedCells = {};
         
@@ -192,7 +198,7 @@ class CubeJS{
             r = mt[row];
             for (i = 0; i < dataColsLength; i++){
                 j = row - cube.cols.levels;
-                v = obj.value(j, i, functions, this);
+                v = obj.value.apply(this, [j, i, functions]);
                 c = i + cube.rows.levels;
                 
                 r[c] = {
@@ -206,7 +212,7 @@ class CubeJS{
                 this._formatValue(r[c]);
             }
         };
-    
+
         let caculatedColValues = (obj) => {
             let i, j, r, v;
             let col = mapCols[obj.id];
@@ -216,7 +222,7 @@ class CubeJS{
                 
                 if (mt[r]){
                     j = col - cube.rows.levels;
-                    v = obj.value(i, j, functions, this);
+                    v = obj.value.apply(this, [i, j, functions]);
                     
                     mt[r][col] = {
                         value    : v,
@@ -230,6 +236,13 @@ class CubeJS{
                 }
             }
         };
+
+        // calcula collength e dataColsLength
+        cube.data.forEach(arr => {
+            if (arr.length > dataColsLength){
+                dataColsLength = cube.data.collength = arr.length;
+            }
+        });
 
         c = cube.rows.levels;
         for (i = 0; i < cube.cols.children.length; i++){
@@ -310,13 +323,11 @@ class CubeJS{
 
     static createPlugin(name, obj) {
         plugins[name] = obj;
-
         return this;
     }
     static createFunction(name, fn) {
         functions[name] = fn;
-
-        return this;
+        return fn;
     }
     static createOperation(name, def){
         def.priority = def.priority || 100;

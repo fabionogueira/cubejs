@@ -4,6 +4,8 @@ import './app.css';
 
 import CubeJS from '../src/index.js';
 import ElasticAdapter from '../src/adapters/ElasticAdapter';
+import {CELL} from '../src/functions';
+// import DATA from './data.json';
 
 export default Vue.component('app', {
     template: view,
@@ -26,14 +28,27 @@ export default Vue.component('app', {
             cube.addOperation('op1', 'totalRow', {label:'Total'});
             cube.addOperation('op2', 'totalCol', {label:'Total'});
             cube.addOperation('op3', 'calculatedCol', {
-                label:'Custom',
+                label:'(qtd_armas+qtd_presos)/2',
                 reference: '1º bpm',
                 position: 'after',
-                expression(x, y, Functions, cubeJS){
-                    let v = (Functions.CELL.apply(cubeJS, [x, '1º bpm$qtd_armas']));
-                    return v * 2;
+                expression(row, col){
+                    let v1 = (CELL.apply(this, [row, '1º bpm$qtd_armas']));
+                    let v2 = (CELL.apply(this, [row, '1º bpm$qtd_presos']));
+                    
+                    return (v1 + v2) / 2;
                 }
-
+            });
+            cube.addOperation('op4', 'calculatedCol', {
+                label:'before+after',
+                reference: '1º bpm$qtd_presos',
+                position: 'before',
+                expression: '$CELL($r,$c-1) + $CELL($r,$c+1)'
+                // (row, col){
+                //     let v1 = (CELL.apply(this, [row, col - 1]));
+                //     let v2 = (CELL.apply(this, [row, col + 1]));
+                    
+                //     return v1 + v2;
+                // }
             });
 
             // set data

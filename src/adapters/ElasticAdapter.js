@@ -129,7 +129,7 @@ function transform(definition, agg){
         cube.data[y] = cube.data[y] || [];
         cube.data[y][x] = {value: (bucket.value === undefined ? bucket : bucket.value)};
         
-        if (cube.data.collength < cube.data[y].length) cube.data.collength = cube.data[y].length;
+        // if (cube.data.collength < cube.data[y].length) cube.data.collength = cube.data[y].length;
     }
     function processMeasureBucketRow(bucketKey, bucket, parentObj, x){
         let y, k;
@@ -143,12 +143,12 @@ function transform(definition, agg){
         cube.data[y] = cube.data[y] || [];
         cube.data[y][x] = {value:bucket.value || bucket};
         
-        if (cube.data.collength < cube.data[y].length) cube.data.collength = cube.data[y].length;
+        // if (cube.data.collength < cube.data[y].length) cube.data.collength = cube.data[y].length;
     }
     function processDataBucket(bucket, x, y){
         cube.data[y] = cube.data[y] || [];
         cube.data[y][x] = {value:bucket.doc_count};
-        if (cube.data.collength < cube.data[y].length) cube.data.collength = cube.data[y].length;
+        // if (cube.data.collength < cube.data[y].length) cube.data.collength = cube.data[y].length;
     }
     function createColItem(children, item){
         if (!mapCols[item.id]) {
@@ -158,7 +158,7 @@ function transform(definition, agg){
                 item: item,
                 x:x
             };
-            cube.data.collength = x;
+            // cube.data.collength = x;
         }
         
         return mapCols[item.id].item;

@@ -28,7 +28,7 @@ function toHTML(cubeJs){
             cls += obj.calc ? ' calc-' + obj.calc + ' value-calc' : '';
         }
         
-        v = (obj ? obj.label || obj.value : null);
+        v = (obj ? obj.label || obj.value || obj.dimension || obj.measure || null : null);
         
         return '<td class="' + cls + '">' + (v === null || v === undefined ? '' : v) + '</td>';
     }

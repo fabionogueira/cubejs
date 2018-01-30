@@ -31,10 +31,12 @@ function doCalcOperation(op, obj, parent, index){
 
     return index;
 }
+
+// context = CubeJS instance
 function doTotalCol(y, x){
     let i, r, c;
     let s = 0;
-    let m = arguments[3]._data.data;
+    let m = this._data.data;
     
     r = m[y];
     
@@ -45,10 +47,12 @@ function doTotalCol(y, x){
     
     return s;
 }
+
+// context = CubeJS instance
 function doTotalRow(y, x){
     let i, c;
     let s = 0;
-    let m = arguments[3]._data.data;
+    let m = this._data.data;
     
     for (i = 0; i < m.length; i++){
         c = m[i][x];
