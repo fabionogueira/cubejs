@@ -5,11 +5,11 @@ OLAP Cube data manipulation
 
 ## usage
 ```
-npm install cubejs
+npm install jscube
 ```
 
 ```javascript
-import CubeJS from 'cubejs';
+import CubeJS from 'jscube';
 
 let definition = {
     rows: {
