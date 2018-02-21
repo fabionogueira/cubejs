@@ -1,6 +1,6 @@
 import CubeJS from '../CubeJS';
 
-function toHTML(cubeJs){
+function toHTML(cubeJs, options = {}){
     let r, c, row, html;
     let cube = cubeJs._data;
     let matrix = cubeJs._matrix;
@@ -33,7 +33,7 @@ function toHTML(cubeJs){
         return '<td class="' + cls + '">' + (v === null || v === undefined ? '' : v) + '</td>';
     }
     
-    html = '<table class="table" border="1" cellpadding="3" cellspacing="0">';
+    html = `<table class="table ${options.className}" border="1" cellpadding="3" cellspacing="0">`;
     for (r = 0; r < matrix.rowsLength; r++){
         row = matrix[r];
         html += '<tr>';
@@ -48,8 +48,8 @@ function toHTML(cubeJs){
 }
 
 CubeJS.createPlugin('html.table', {
-    renderTo(element){
-        element.innerHTML = toHTML(this.cubeJS);
+    renderTo(element, options){
+        element.innerHTML = toHTML(this.cubeJS, options);
         return element;
     }
 });

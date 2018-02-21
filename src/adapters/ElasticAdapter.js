@@ -73,7 +73,7 @@ function transform(definition, agg){
             
             if (!e){
                 // métrica no data
-                processDataBucket(b, mapCols[k].x, mapRows[parentObjRow.id].y);
+                processDataBucket(b, mapCols[k].x, mapRows[parentObjRow.id] ? mapRows[parentObjRow.id].y : 0);
             }
         }
     }
@@ -113,7 +113,7 @@ function transform(definition, agg){
             
             if (!e){
                 // métrica no data
-                processDataBucket(b, mapCols[parentObjCol.id].x, mapRows[k].y);
+                processDataBucket(b, mapCols[parentObjCol.id] ? mapCols[parentObjCol.id].x : 0, mapRows[k].y);
             }
         }
     }
@@ -195,8 +195,26 @@ function transform(definition, agg){
 
 export default {
     response(cubejs, data){
+        let o = {
+            levels: 1,
+            children:[
+                {
+                    id: 'doc_count',
+                    label: 'count',
+                    measure: 'doc_count'
+                }
+            ]
+        };
+
         if (data && !data.__es__) {
             data = transform(cubejs.getDefinition(), data.aggregations);
+
+            if (data.cols.levels == 0){
+                data.cols = o
+            } else if (data.rows.levels == 0){
+                data.rows = o
+            }
+
             data.__es__ = true;
         }
         
