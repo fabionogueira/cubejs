@@ -1,5 +1,6 @@
-import CubeJS from '../CubeJS';
+// @ts-check
 
+// @ts-ignore
 const Plotly = window.Plotly;
 
 function getColCategories(data){
@@ -73,7 +74,8 @@ function getSeries(instance, colsCategories, type){
             x: colsCategories,
             y: [],
             name: categories[i],
-            type: type || 'bar'
+            type: type || 'bar',
+            orientation: null
         };
 
         for (x = data.rows.levels; x < mt.colsLength; x++){
@@ -100,10 +102,9 @@ function getSeries(instance, colsCategories, type){
     
     return series;
 }
-
-function columnChart(element, cubeJs, layout, orientation, type){
-    let categories = getColCategories(cubeJs._data);
-    let series = getSeries(cubeJs, categories, type);
+function renderChart(element, cubeJs, layout, orientation, type){
+    let categories = getColCategories(cubeJs._data)
+    let series = getSeries(cubeJs, categories, type)
     
     series.forEach(serie => {
         let x = serie.x;
@@ -113,42 +114,44 @@ function columnChart(element, cubeJs, layout, orientation, type){
             serie.x = serie.y;
             serie.y = x;
         }
-    });
+    })
 
-    return Plotly.newPlot(element, series, layout);
+    return Plotly.newPlot(element, series, layout)
 }
 
-CubeJS.createPlugin('plotly.column', {
-    renderTo(element){
-        let layout = {barmode: 'group'};
-        return columnChart(element, this.cubeJS, layout);
-    }
-});
+function column(cubeJS, element){
+    let layout = {barmode: 'group'};
+    return renderChart(element, this.cubeJS, layout)
+}
 
-CubeJS.createPlugin('plotly.bar', {
-    renderTo(element){
-        let layout = {barmode: 'group'};
-        return columnChart(element, this.cubeJS, layout, 'h');
-    }
-});
+function bar(cubeJS, element){
+    let layout = {barmode: 'group'}
+    return renderChart(element, this.cubeJS, layout, 'h')
+}
 
-CubeJS.createPlugin('plotly.column.stacked', {
-    renderTo(element){
-        let layout = {barmode: 'stack'};
-        return columnChart(element, this.cubeJS, layout);
-    }
-});
+function column_stacked(cubeJS, element){
+    let layout = {barmode: 'stack'}
+    return renderChart(element, this.cubeJS, layout)
+}
 
-CubeJS.createPlugin('plotly.bar.stacked', {
-    renderTo(element){
-        let layout = {barmode: 'stack'};
-        return columnChart(element, this.cubeJS, layout, 'h');
-    }
-});
+function bar_stacked(cubeJS, element){
+    let layout = {barmode: 'stack'};
+    return renderChart(element, this.cubeJS, layout, 'h')
+}
 
-CubeJS.createPlugin('plotly.line', {
-    renderTo(element){
-        let layout = {};
-        return columnChart(element, this.cubeJS, layout, null, 'scatter');
-    }
-});
+function line(cubeJS, element){
+    let layout = {};
+    return renderChart(element, this.cubeJS, layout, null, 'scatter');
+}
+
+export default {
+    column,
+    bar,
+    column_stacked,
+    bar_stacked,
+    line
+}
+
+// usage
+// import plotyPlugin from 'cubejs/plugins/plotly'
+// plotyPlugin(cubeJsInstance, document.getElementById('element_id'))

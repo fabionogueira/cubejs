@@ -1,12 +1,19 @@
+// @ts-check
+
 /* eslint no-new-func:off */
 /* jshint evil:true */
 
 let functions = {};
 let operations = {};
-let plugins = {};
 let noop = function(){};
 
-const FORMAT = {
+const DEFAULT_OPERATION_OPTIONS = {
+    priority: 100,
+    create: noop,
+    init: noop
+}
+
+const DEFAUL_FORMAT = {
     precision: 2,
     prefix   : '',
     suffix   : '',
@@ -16,8 +23,7 @@ const FORMAT = {
 
 class CubeJS{
     constructor(options){
-
-        this._format = Object.assign(FORMAT, options.format || {});
+        this._format = Object.assign({}, DEFAUL_FORMAT, options.format || {});
 
         this._operations = [];
         this._mapRows = {};
@@ -34,9 +40,15 @@ class CubeJS{
         if (data && !data.__processed__) {
             this._data = this._adapter ? this._adapter.response(this, data) : data;
             
+            // this._data.collength = 0
+            // this._data.cols = this._data.cols || {children:[]}
+            // this._data.rows = this._data.rows || {children:[]}
+            // this._data.rows.levels = this._data.rows.levels || 1
+            // this._data.cols.levels = this._data.cols.levels || 1
+
             this._initOperations();
             this._createMatrix();
-
+            
             data.__processed__ = true;
         }
 
@@ -44,11 +56,11 @@ class CubeJS{
     }
 
     getData(){
-        return this._data;
+        return this._data
     }
 
     getMatrix(){
-        return this._data.data;
+        return this._matrix //._data.data;
     }
 
     addOperation(id, name, options) {
@@ -96,16 +108,6 @@ class CubeJS{
         return this;
     }
 
-    plugin(name){
-        let obj = plugins[name];
-
-        if (obj){
-            obj.cubeJS = this;
-        }
-
-        return obj;
-    }
-
     _compilerExpression(exp){
         let i, r, c;
 
@@ -122,16 +124,15 @@ class CubeJS{
     }
     
     _createMatrix(){
-        let i, j, r, c, op, a, mt, row, ops, cube, cell, mapCols, mapRows, dataRowsLength, dataColsLength, calculatedCells;
-        
-        mt = this._matrix = [];
-        cube = this._data;
-        ops = this._operations;
-        mapCols = this._mapCols;
-        mapRows = this._mapRows;
-        dataColsLength = 0; // cube.data.collength;
-        dataRowsLength = cube.data.length;
-        calculatedCells = {};
+        let i, j, r, c, op, a, row, cell
+        let mt = this._matrix = []
+        let cube = this._data
+        let ops = this._operations
+        let mapCols = this._mapCols
+        let mapRows = this._mapRows
+        let dataColsLength = 0 // cube.data.collength;
+        let dataRowsLength = cube.data.length
+        let calculatedCells = {}
         
         // títulos de colunas
         let createColCell = (obj, row, col) => {
@@ -263,7 +264,7 @@ class CubeJS{
                 cell = row[c];
                 j = c + cube.rows.levels;
                 if (mt[i]) mt[i][j] = row[c];
-                this._formatValue(cell, this._format);
+                this._formatValue(cell);
             }
         }
         
@@ -280,7 +281,9 @@ class CubeJS{
             }
         }
         
+        // @ts-ignore
         mt.colsLength = dataColsLength + cube.rows.levels;
+        // @ts-ignore
         mt.rowsLength = dataRowsLength + cube.cols.levels;
         
         return mt;
@@ -310,6 +313,10 @@ class CubeJS{
         return 1;
     }
 
+    /**
+     * @private
+     * @param {*} cell 
+     */
     _formatValue(cell){
         let v, a;
     
@@ -321,19 +328,15 @@ class CubeJS{
         }
     }
 
-    static createPlugin(name, obj) {
-        plugins[name] = obj;
-        return this;
-    }
     static createFunction(name, fn) {
         functions[name] = fn;
         return fn;
     }
-    static createOperation(name, def){
-        def.priority = def.priority || 100;
-        def.create = def.create || noop;
-        def.init = def.init || noop;
-        operations[name] = def;
+    static createOperation(name, def = {}){
+        let d = {}
+
+        Object.assign(d, DEFAULT_OPERATION_OPTIONS, def)
+        operations[name] = d;
 
         return this;
     }

@@ -1,3 +1,5 @@
+// @ts-check
+
 /* jshint latedef: nofunc */
 // converte o cubo de es para cubejs
 
@@ -29,6 +31,7 @@ function transform(definition, agg){
         },
         data:[]
     };
+    // @ts-ignore
     cube.data.collength = 0;
     
     // define se a raiz é linha ou coluna
@@ -252,19 +255,19 @@ export default {
                 
             switch (d.type){
             case 'date':
-                o4 = o3.date_histogram = {
+                o4 = o3['date_histogram'] = {
                     field: k
                 };
                 switch (p[1]){
                 case 'year':
-                    o4.interval = 'year';
-                    o4.format = 'yyy';
+                    o4['interval'] = 'year';
+                    o4['format'] = 'yyy';
                     break;
                 }
                 break;
 
             default:
-                o3.terms = {
+                o3['terms'] = {
                     field: a[i]
                 };
                 break;
@@ -299,7 +302,7 @@ export default {
             v = b[i].replace('.', '_');
             k = p[0];
             d = options.dimensions[k];
-            o2 = o1.aggs = {};
+            o2 = o1['aggs'] = {};
             o3 = o2[v] = {};
             
             // tipos nested devem ficar no final
@@ -310,7 +313,7 @@ export default {
                 aggs:{}
             };
             o3 = o.aggs[v] = {};
-            o3.terms = {
+            o3['terms'] = {
                 field: b[i]
             };
         }

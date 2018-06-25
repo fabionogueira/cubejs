@@ -1,6 +1,6 @@
-// operações
+// @ts-check
 
-import CubeJS from '../CubeJS';
+import CubeJS from './cubejs';
 
 function doCalcOperation(op, obj, parent, index){
     let i, o;
@@ -87,19 +87,22 @@ CubeJS
         priority: 20, // quanto maior a prioridade será executado mais para o final
         init: function(cubeJs, op){
             let o;
-            let data = cubeJs.getData();
+            let data = cubeJs.getData()
+            let definition = cubeJs.getDefinition()
             
-            o = {
-                calculated: true, 
-                type: 'calculatedCol', 
-                id: op.id, 
-                label: op.label, 
-                position: op.position, 
-                value: doTotalCol, 
-                summary: true
-            };
-
-            data.cols.children.push(o);
+            if (definition.cols && data.cols){
+                o = {
+                    calculated: true, 
+                    type: 'calculatedCol', 
+                    id: op.id, 
+                    label: op.label, 
+                    position: op.position, 
+                    value: doTotalCol, 
+                    summary: true
+                };
+    
+                data.cols.children.push(o);
+            }
         }
     })
     .createOperation('totalRow', {

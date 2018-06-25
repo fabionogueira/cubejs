@@ -1,9 +1,8 @@
-import CubeJS from '../CubeJS';
-
-function toHTML(cubeJs, options = {}){
+// @ts-check
+function toHTML(cubeJs, options){
     let r, c, row, html;
-    let cube = cubeJs._data;
-    let matrix = cubeJs._matrix;
+    let cube = cubeJs.getData();
+    let matrix = cubeJs.getMatrix();
     
     function createHTMLCell(r, c, obj){
         let cls;
@@ -34,22 +33,25 @@ function toHTML(cubeJs, options = {}){
     }
     
     html = `<table class="table ${options.className}" border="1" cellpadding="3" cellspacing="0">`;
-    for (r = 0; r < matrix.rowsLength; r++){
-        row = matrix[r];
-        html += '<tr>';
-        for (c = 0; c < matrix.colsLength; c++){
-            html += createHTMLCell(r, c, row[c]);
+    console.log(matrix)
+    if (matrix){
+        for (r = 0; r < matrix.rowsLength; r++){
+            row = matrix[r];
+            html += '<tr>';
+            for (c = 0; c < matrix.colsLength; c++){
+                html += createHTMLCell(r, c, row[c]);
+            }
+            html += '</tr>';
         }
-        html += '</tr>';
+    } else {
+        html += '<tr><td style="padding:20px">no data</td></tr>'
     }
     html += '</table>';
     
     return ('<pre>' + html + '</pre>');
 }
 
-CubeJS.createPlugin('html.table', {
-    renderTo(element, options){
-        element.innerHTML = toHTML(this.cubeJS, options);
-        return element;
-    }
-});
+export default function table(cubeJS, element, options = {}){
+    element.innerHTML = toHTML(cubeJS, options)
+    return element
+}

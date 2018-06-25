@@ -1,7 +1,8 @@
-// provê gráficos c3
+// @ts-check
 
 import CubeJS from '../CubeJS';
 
+// @ts-ignore
 const c3 = window.c3;
 
 function getColCategories(data){
@@ -133,8 +134,8 @@ function barChart(element){
     });
 }
 
-CubeJS.createPlugin('c3.column', {
-    renderTo(element){
-        return columnChart(element, this.cubeJS);
-    }
-});
+// CubeJS.createPlugin('c3.column', {
+//     renderTo(element){
+//         return columnChart(element, this.cubeJS);
+//     }
+// });

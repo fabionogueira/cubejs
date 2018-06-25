@@ -1,6 +1,6 @@
-// funções
+// @ts-check
 
-import CubeJS from './CubeJS';
+import CubeJS from './cubejs';
 
 const CELL = CubeJS.createFunction('$CELL', function(r, c){
     let ro, co;
@@ -22,28 +22,31 @@ const CELL = CubeJS.createFunction('$CELL', function(r, c){
 });
 
 const SUMMARY_ROW = CubeJS.createFunction('SUMMARY_ROW', function(r, c){
-    if (this.$CACHE_ROWSUM[r] == undefined){
-        this.$CACHE_ROWSUM[r] = {};
-        this.$CACHE_ROW_MEASURE[r] = {};
-        this.$CACHE_ROW_PERCENT[r] = {};
-    }
-    if (this.$CACHE_ROWSUM[r][c] == undefined){
-        let i, ce;
-        let s = 0;
-        let q = 0;
+    let i, ce
+    let s = 0
+    let q = 0
 
+    if (this.$CACHE_ROWSUM[r] == undefined){
+        this.$CACHE_ROWSUM[r] = {}
+        this.$CACHE_ROW_MEASURE[r] = {}
+        this.$CACHE_ROW_PERCENT[r] = {}
+    }
+
+    if (this.$CACHE_ROWSUM[r][c] == undefined){    
         for (i = this._cube.cols.levels; i < r; i++){
-            ce = this.MT[i][c];
+            ce = this.MT[i][c]
             if (ce){
-                s += ce.value;
-                q++;
+                s += ce.value
+                q++
             }
         }
-        this.$CACHE_ROWSUM[r][c] = s;
-        this.$CACHE_ROW_MEASURE[r][c] = ((s / (q)).toFixed(2)) * 1;
-        this.$CACHE_ROW_PERCENT[r][c] = 'TODO';
+
+        this.$CACHE_ROWSUM[r][c] = s
+        this.$CACHE_ROW_MEASURE[r][c] = s / q
+        this.$CACHE_ROW_PERCENT[r][c] = 'TODO'
     }
-    return this.$CACHE_ROWSUM[r][c];
+
+    return this.$CACHE_ROWSUM[r][c]
 });
 
 const MEASURE_ROW = CubeJS.createFunction('MEASURE_ROW', function(r, c){

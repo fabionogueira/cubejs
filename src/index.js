@@ -1,10 +1,7 @@
-import CubeJS from './CubeJS';
+// @ts-check
 
-import './plugins/c3.plugin';
-import './plugins/plotly.plugin';
-import './plugins/operations';
-import './plugins/table.plugin';
-
+import CubeJS from './cubejs';
+import './operations'
 import './functions';
 
 export default CubeJS;
