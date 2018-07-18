@@ -1,7 +1,11 @@
-// @ts-check
+import CubeJS from './cubejs'
+import elasticsearch from './adapters/elasticsearch'
+import csv from './adapters/csv'
 
-import CubeJS from './cubejs';
+import './functions'
 import './operations'
-import './functions';
 
-export default CubeJS;
+CubeJS.registerAdapter('elasticsearch', elasticsearch)
+CubeJS.registerAdapter('csv', csv)
+
+export default CubeJS

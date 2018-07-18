@@ -1,0 +1,76 @@
+.cubejs-hbox{display:flex; justify-content:flex-start; align-items:stretch; flex-direction:row;}
+.cubejs-vbox{display:flex; justify-content:flex-start; align-items:stretch; flex-direction:column;}
+
+.cubejs-table-corner{
+    border: solid 1px #cccccc;
+    border-style: solid solid none solid;
+}
+.cubejs-table-categories{
+    border: solid 1px #cccccc;
+    border-style: none none solid solid;
+}
+.cubejs-table-values{
+    border: solid 1px #cccccc;
+    border-style: none none solid none;
+}
+.cubejs-cell{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: monospace;
+    font-size: 12px;
+    border: solid 1px #cccccc;
+    border-style: solid solid none none;
+    padding: 4px;
+}
+.cell-content{
+    white-space: nowrap;
+    overflow: hidden;
+}
+.cubejs-category-cell{
+    height: 24px;
+    background: #fffce4;
+    font-weight: bold;
+}
+.cubejs-category-row{
+    width: 100px;
+}
+.cubejs-category-row-parent{
+    align-items: flex-start;
+    height: auto;
+    padding-top: 4px;
+}
+.cubejs-category-col{
+    width: 100px;
+}
+.cubejs-category-col-parent{
+    width: auto;
+}
+.cubejs-category-flex{
+    flex: 1
+}
+.cubejs-is-measure{
+    color: #533d56;
+    font-style: italic;
+    font-weight: normal;
+}
+.cubejs-data-cell{
+    width: 100px;
+    height: 24px;
+    background: #f3f3f3;
+    justify-content: flex-end;
+}
+.cubejs-calculated-category{
+    color: red;
+    font-weight: bold
+}
+.cubejs-calculated-data{
+    color: red;
+    font-weight: bold
+}
+.cubejs-data-cell .cell-content{
+    padding-right: 10px;
+}
+.cubejs-category-col.cubejs-category-flex{
+    height: 100%;
+}
