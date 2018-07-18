@@ -39,14 +39,14 @@ export default function(cube){
         reference: 'CBC'
     }) */
 
-    /*cube.addOperation({
-        key: 'merge-pt',
+    cube.addOperation({
+        key: 'merge-01',
         operation: 'MERGE_COLS',
-        references: ['PT 24/7 PRÓ', 'PT 24/7', 'PT 100'],
-        display: "PT's"
+        references: ['Midmarket', 'Government'],
+        display: "MERGE"
     })
 
-    cube.addOperation({
+    /*cube.addOperation({
         key: 'merge-38',
         operation: 'MERGE_ROWS',
         references: ['38', '.38', '38 SPL', '0,38', '38 SPECIAL'],
