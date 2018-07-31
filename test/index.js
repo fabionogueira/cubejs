@@ -48,19 +48,75 @@ function elasticsearch(){
 
 function csv(){
     const definition = {
-        cols: [{dimension: 'Segment'}, {dimension: 'Year'}],
-        rows: [{dimension: 'Country'}, {measure: 'Sale Price'}, {measure:'Manufacturing Price'}],
+        cols: [
+            {dimension: 'Segment'}, 
+            {dimension: 'Year'}
+        ],
+        rows: [
+            {dimension: 'Country'}, 
+            {measure: 'Sale Price'/*, prefix:'R$ '*/}, 
+            {measure: 'Manufacturing Price'/*, prefix:'R$ '*/},
+            {measure: 'Profit'}
+        ],
         filters: []
     }
     
+    CubeJS.defaults({
+        precision: 0,
+        thousand: '',
+        decimal: ','
+    })
     const cube = new CubeJS(definition, 'csv')
     
+    cube.createField({
+        key: 'Profit',
+        expression(row){
+            return row['Sale Price'] - row['Manufacturing Price']
+        }
+    })
     cube.setData(csvData)
-    operationsCsv(cube)
     
-    view(cube)
+    showOperations(operationsCsv, cube)
+    renderCube(cube)
 
     console.log('csv test complete')
+}
+
+function showOperations(operations, cube){
+    let html = ''
+
+    operations.forEach((op, index) => {
+        let i = (index<9 ? '0' : '') + (index + 1)
+        let display = op.operation + displayValue(op.dimension) + displayValue(op.position) + displayValue(op.reference) + displayValue(op.expression) 
+        html += `<label class="input-operation">${i} <input onchange="opCheckbox_onChange(this, ${index})" type="checkbox"> ${display}</label>`
+    })
+
+    document.getElementById('operations').innerHTML = html
+    
+    function displayValue(value){
+        return value ? ' [' + value + ']' : ''
+    }
+
+    window['opCheckbox_onChange'] = function(checkbox, index){
+        let op = operations[index]
+
+        op._checked = checkbox.checked
+
+        cube.clearOperations()
+
+        operations.forEach(o => {
+            if (o._checked) {
+                cube.addOperation(o)
+            }
+        })
+
+        renderCube(cube)
+    }
+}
+
+function renderCube(cube){
+    cube.applyOperations()
+    view(cube)
 }
 
 csv()

@@ -24,7 +24,7 @@ class Functions{
             
             // ignora aregra no-new-func do eslint
             /* eslint-disable */
-            this._expressions[exp] = Function('return ' + exp)
+            this._expressions[exp] = Function('$INDEX', 'return ' + exp)
             /* eslint-enable */
         }
 

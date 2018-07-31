@@ -1,57 +1,120 @@
-export default function(cube){
-    cube.addOperation({
-        key: 'opShowTotalRow',
-        operation: 'ADD_ROW',
-        expression: 'SUMMARY()',
-        display: 'total',
-        priority: 1000
-    })
+export default [
+    // {
+    //     operation: 'REMOVE_ROW',
+    //     reference: 'France'
+    // }
 
-    cube.addOperation({
-        key: 'opShowTotalCol',
-        operation: 'ADD_COL',
-        expression: 'SUMMARY()',
-        display: 'total',
-        priority: 1000
-    })
+    {
+        key: 'opSortRows',
+        operation: 'SORT_ROWS',
+        dimension: 'Country'
+    },
 
-    /*cube.addOperation({
-        key: 'op_principais',
+    {
+        key: 'opSortCols',
+        operation: 'SORT_COLS',
+        dimension: 'Year'
+    },
+
+    {
+        key: 'Gover_Total',
         operation: 'ADD_COL',
         position: 'after',
-        reference: '87',
-        expression: 'SUM(VALUES("94", "85 S", "87"))',
-        display: 'principais'
-    })
+        reference: 'Government2014',
+        expression: 'SUM(VALUES("Government2013", "Government2014"))',
+        display: 'Gover Total',
+        summary: true
+    },
 
-    /*cube.addOperation({
-        operation: 'REMOVE_ROW',
-        reference: 'TAURUS'
-    })
+    {
+        key: 'Gover_Diff',
+        operation: 'ADD_COL',
+        position: 'after',
+        reference: 'Gover_Total',
+        expression: 'IF(VALUE("Government2013") - $("Government2014") > 0, 1, 0)',
+        display: 'Gover Diff',
+        summary: true
+    },
 
-    cube.addOperation({
-        operation: 'REMOVE_ROW',
-        reference: 'ROSSI'
-    })
+    {
+        key: 'Gover_Accum_2014',
+        operation: 'ADD_COL',
+        position: 'after',
+        reference: 'Gover_Diff',
+        expression: '$("Government2014") + VALUEX("Gover_Accum_2014", $INDEX - 1)',
+        display: 'Accum 2014',
+        summary: true
+    },
 
-    cube.addOperation({
-        operation: 'REMOVE_ROW',
-        reference: 'CBC'
-    }) */
+    {
+        key: 'Accum_France',
+        operation: 'ADD_ROW',
+        position: 'after',
+        reference: 'France',
+        expression: '$("FranceSale Price") + VALUEX("Accum_France", $INDEX - 1)',
+        display: 'Accum France',
+        summary: true
+    },
 
-    cube.addOperation({
-        key: 'merge-01',
-        operation: 'MERGE_COLS',
-        references: ['Midmarket', 'Government'],
-        display: "MERGE"
-    })
+    {
+        key: 'opShowTotalRow',
+        operation: 'ADD_ROW',
+        expression: 'SUM()',
+        display: 'total',
+        priority: 1000
+    },
 
-    /*cube.addOperation({
-        key: 'merge-38',
+    {
+        key: 'opShowTotalCol',
+        operation: 'ADD_COL',
+        expression: 'SUM()',
+        display: 'total',
+        priority: 1000
+    },
+
+    // {
+    //     key: 'op_principais',
+    //     operation: 'ADD_ROW',
+    //     position: 'after',
+    //     reference: 'Germany',
+    //     expression: 'SUM(VALUES())',
+    //     display: 'Channel Partners Total'
+    // }
+
+    {
+        key: 'traduzir',
+        operation: 'ALIAS',
+        values: {
+            'Government': 'Governamental',
+            'Midmarket': 'Mercado',
+            'Channel Partners': 'Parceiros do Canal',
+            'Sale Price': 'Preço',
+            'Manufacturing Price': 'Custo',
+            'Profit': 'Lucro',
+            'United States of America': 'USA'
+        }
+    },
+
+    // {
+    //     key: 'merge-01',
+    //     operation: 'MERGE_COLS',
+    //     references: ['Midmarket', 'Government'],
+    //     display: "MERGE",
+    //     position: 'before',
+    //     reference: 'Channel Partners'
+    // }
+
+    {
+        key: 'merge-america',
         operation: 'MERGE_ROWS',
-        references: ['38', '.38', '38 SPL', '0,38', '38 SPECIAL'],
-        display: '38'
-    })*/
+        references: ['Canada', 'Mexico', 'United States of America'],
+        display: 'America'
+    },
 
-    cube.applyOperations()
-}
+    {
+        key: 'merge-europe',
+        operation: 'MERGE_ROWS',
+        references: ['Germany', 'France'],
+        display: 'Europe'
+    }
+]

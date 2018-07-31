@@ -1,12 +1,12 @@
 import Functions from './Functions'
 
 /**
- * case 01: SUM([1,2,3])
- * case 02: SUM('keyStart', 'keyEnd') ou SUM('keyStart') // assume keyEnd=última linha/coluna
- * case 03: SUM() // assume keyStart=primeira linha/coluna e keyEnd=última linha/coluna
+ * case 01: SUM(condition, [1,2,3])
+ * case 02: SUM(condition, 'keyStart', 'keyEnd') ou SUM('keyStart') // assume keyEnd=última linha/coluna
+ * case 03: SUM(condition) // assume keyStart=primeira linha/coluna e keyEnd=última linha/coluna
  */
 
-Functions.create('SUM', function(start, end) {
+Functions.create('SUMIF', function(condition, start, end) {
     let context = this.context
     let instance = this.instance
     let sum = 0

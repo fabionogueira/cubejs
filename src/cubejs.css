@@ -21,14 +21,14 @@
     font-size: 12px;
     border: solid 1px #cccccc;
     border-style: solid solid none none;
-    padding: 4px;
 }
 .cell-content{
     white-space: nowrap;
     overflow: hidden;
+    margin: 6px;
 }
 .cubejs-category-cell{
-    height: 24px;
+    min-height: 24px;
     background: #fffce4;
     font-weight: bold;
 }
@@ -47,7 +47,8 @@
     width: auto;
 }
 .cubejs-category-flex{
-    flex: 1
+    flex: 1;
+    height: 100%;
 }
 .cubejs-is-measure{
     color: #533d56;

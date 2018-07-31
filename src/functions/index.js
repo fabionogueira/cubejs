@@ -1,7 +1,8 @@
+import './VALUE'
 import './VALUES'
 import './RANGE'
 import './SUM'
-import './SUMMARY'
+import './IF'
 
 import {Functions, FunctionsCache} from './Functions'
 

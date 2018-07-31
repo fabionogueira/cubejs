@@ -1,0 +1,22 @@
+Source
+    name
+    getDimensions()
+    getMeasures()
+
+SourceElastic extends Source
+    (url, index)
+
+SourceCsv extends Source
+    (content, colSeparator, rowSeparator)
+
+Query
+    source: Source
+    rows
+    cols
+    filters
+    run()
+
+Cube
+    rows
+    cols
+    setData()
