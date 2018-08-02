@@ -46,14 +46,19 @@ Functions.create('ROW_VALUES', function(colKey, args) {
 
 Functions.create('VALUES', function() {
     let start, end
+    let cubejs = this.instance
     let context = this.context
     
     if (arguments.length==0){
-        start = context.activeRow ? this.instance.findFirstCol().key : this.instance.findFirstRow().key
-        end = context.activeRow ? this.instance.findLastCol().key : this.instance.findLastRow().key
+        start = context.activeRow ? cubejs.findFirstCol().key : cubejs.findFirstRow().key
+        end = context.activeRow ? cubejs.findLastCol().key : cubejs.findLastRow().key
 
-        return context.activeRow ? this.COL_RANGE(context.activeRow.key, start, end) : this.ROW_RANGE(context.activeCol.key, start, end)
+        return context.activeRow ? 
+                    cubejs.getColRangeValues(context.activeRow.key, start, end) : 
+                    cubejs.getRowRangeValues(context.activeCol.key, start, end)
     }
 
-    return context.activeRow ? this.COL_VALUES(context.activeRow.key, arguments) : this.ROW_VALUES(context.activeCol.key, arguments)
+    return context.activeRow ?
+                cubejs.getColRangeValues(context.activeRow.key, arguments[0], arguments[1]) : 
+                cubejs.getRowRangeValues(context.activeCol.key, arguments[0], arguments[1])
 })

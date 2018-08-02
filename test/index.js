@@ -50,7 +50,7 @@ function csv(){
     const definition = {
         cols: [
             {dimension: 'Segment'}, 
-            {dimension: 'Year'}
+            {dimension: 'Year'},
         ],
         rows: [
             {dimension: 'Country'}, 

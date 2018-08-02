@@ -8,7 +8,7 @@ import Functions from './Functions'
 
 Functions.create('SUM', function(start, end) {
     let context = this.context
-    let instance = this.instance
+    let cubejs = this.instance
     let sum = 0
     let range
     
@@ -17,9 +17,12 @@ Functions.create('SUM', function(start, end) {
         range = start
     } else {
         // case 02 e case 03
-        start = start || (context.activeRow ? instance.findFirstCol().key : instance.findFirstRow().key)
-        end = end || (context.activeRow ? instance.findLastCol().key : instance.findLastRow().key)
-        range = context.activeRow ? this.COL_RANGE(context.activeRow.key, start, end) : this.ROW_RANGE(context.activeCol.key, start, end)
+        start = start || (context.activeRow ? cubejs.findFirstCol().key : cubejs.findFirstRow().key)
+        end = end || (context.activeRow ? cubejs.findLastCol().key : cubejs.findLastRow().key)
+
+        range = context.activeRow ? 
+                    cubejs.getColRangeValues(context.activeRow.key, start, end) : 
+                    cubejs.getRowRangeValues(context.activeCol.key, start, end)
     }
     
     range.forEach(v => { sum += v })

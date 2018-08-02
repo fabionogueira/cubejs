@@ -9,73 +9,10 @@ CubeJS.createOperation({
 
     function(operationDef) {
         let cubejs = this
-        let keys = {}
-        let newRows = {}
-        
-        function mergeChildren(activeCol, keyRow, keyNewRow, parent){
-            let i, k1, k2, v, activeRow, obj
+        let obj = generateRows(cubejs, operationDef)
 
-            activeRow = cubejs.findRow(keyRow)
-            
-            if (activeRow){
-                obj = newRows[keyNewRow] = newRows[keyNewRow] || {
-                    key: keyNewRow,
-                    parent: parent,
-                    dimension: activeRow.dimension,
-                    measure: activeRow.measure,
-                    childrenEx: {}
-                }
-
-                if (parent && parent.children && !parent.childrenEx[keyNewRow]){
-                    parent.childrenEx[keyNewRow] = true
-                    obj._index = parent.children.length
-                    parent.children.push(obj)
-                }
-                
-                if (activeRow.children){
-                    obj.children = obj.children || []
-                    activeRow.children.forEach(child => {
-                        mergeChildren(activeCol, child.key, keyNewRow + (child.dimension || child.measure), obj)
-                    })
-
-                } else {
-                    k1 = activeCol.key + activeRow.key
-                    k2 = activeRow.dimension || activeRow.measure
-
-                    v = cubejs._maps.keys[k1].value + (keys[k2] ? keys[k2] : 0)
-                    keys[k2] = v
-                }
-                
-            }
-            
-            for (i in keys){
-                cubejs._maps.keys[activeCol.key + operationDef.key + i] = {
-                    value: keys[i],
-                    display: keys[i]
-                }
-            }
-
-            return obj
-        }
-
-        cubejs.forEach(cubejs._maps.cols, col => {
-            keys = {}
-            operationDef.references.forEach(keyRow => {
-                let o = mergeChildren(col, keyRow, operationDef.key, null)
-                o.display = o.category = operationDef.display
-            })
-        })
-
-        let root = newRows[operationDef.key]
-
-        for (let i in newRows){
-            delete (newRows[i].childrenEx)
-        }
-
-        cubejs._maps.rows.push(root)
-        console.log(root)
- 
-        // remove as linhas envolvidas na concatenação
+        // adciona a nova linha e remove as linhas concatenadas
+        cubejs._maps.rows.push(obj.root)
         operationDef.references.forEach(item => {
             let row = this.findRow(item)
 
@@ -83,6 +20,79 @@ CubeJS.createOperation({
                 cubejs.removeRow(row)
             }
         })
+
+        // calcula os valores
+        cubejs.forEach(cubejs._maps.cols, col => {
+            let k1, k2, v
+            
+            obj.leafs.forEach(item => {
+                k1 = col.key + item.newRow
+                k2 = col.key + item.row
+
+                if (cubejs._maps.keys[k1]){
+                    v = cubejs._maps.keys[k1].value
+                } else {
+                    v = 0
+                }
+
+                v += cubejs._maps.keys[k2].value
+
+                cubejs._maps.keys[k1] = {
+                    value: v,
+                    display: v
+                }
+            })
+        })
         
     }
 )
+
+function generateRows(cubejs, operationDef){
+    let rows = {}
+    let leafs = []
+    let root = {
+        key: operationDef.key,
+        display: operationDef.display
+    }
+
+    operationDef.references.forEach(k => {
+        let row = cubejs.findRow(k)
+
+        if (row){
+            process(root, row)
+        }
+    })
+
+    return {root, leafs}
+
+    function process(newRow, activeRow){
+        let key
+
+        if (activeRow.children){
+            newRow.children = newRow.children || []
+            
+            activeRow.children.forEach(child => {
+                key = newRow.key + (child.category || child.measure)
+                
+                if (!rows[key]){
+                    rows[key] = {
+                        key: key,
+                        display: child.display,
+                        dimension: child.dimension,
+                        measure: child.measure,
+                        parent: newRow,
+                        _index: newRow.children.length
+                    }
+                    newRow.children.push(rows[key])
+                }
+
+                process(rows[key], child)
+            })
+        } else {
+            leafs.push({
+                newRow: newRow.key,
+                row: activeRow.key
+            })
+        }
+    }
+}
