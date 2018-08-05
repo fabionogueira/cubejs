@@ -2,6 +2,7 @@ var path = require('path');
 
 module.exports = {
     mode: 'development',
+    devtool: 'source-map',
     entry: {
         test: './test/index.js'
     },
@@ -32,7 +33,12 @@ module.exports = {
                 use: [
                   'text-loader'
                 ]
-             }
+             },
+            {
+                test: /\.js$/,
+                use: ["source-map-loader"],
+                enforce: "pre"
+            }
         ]
     }
 }

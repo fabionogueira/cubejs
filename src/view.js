@@ -2,11 +2,17 @@
 
 import './cubejs.css'
 
-export default function(cubejs, element){
+let views = {}
+
+export default function(cubejs, element, id){
     let r, i, d, html, el
     let rc = ''
     let cc = ''
     
+    if (views){
+        views[id] = cubejs
+    }
+
     // rows categories
     for (i = 0; i < cubejs._maps.rows.length; i++){
         r = cubejs._maps.rows[i]
@@ -40,7 +46,7 @@ export default function(cubejs, element){
     if (el) el.innerHTML = html
     
     function createRowCategory(r){
-        let div, i, cls, t
+        let div, i, cls, t, plus
         let oneChild = r.children && r.children.length == 1
         let oneMeasureChild = oneChild && r.children[0].measure
         
@@ -49,8 +55,9 @@ export default function(cubejs, element){
               (r.caculated ? ' cubejs-calculated-category' : '')
         
         t = (r.display || r.categoty || r.measure)
+        plus = r.measure ? '' : ''
         div = '<div class="cubejs-hbox">'
-        div += `<div class="cubejs-cell cubejs-category-cell cubejs-category-row${cls}"><div title="${t}" class="cell-content">${t}</div></div>`
+        div += `<div class="cubejs-cell cubejs-category-cell cubejs-category-row${cls}">${plus}<div title="${t}" class="cell-content">${t}</div></div>`
         if (r.children){
             div += '<div class="cubejs-vbox">'
             if (!oneMeasureChild){
@@ -66,17 +73,19 @@ export default function(cubejs, element){
     }
 
     function createColCategory(r){
-        let div, i, cls, t
+        let div, i, cls, t, plus
         let oneChild = r.children && r.children.length == 1
         let oneMeasureChild = oneChild && r.children[0].measure
+        let key = r.key
         
         cls = (r.children ? oneChild ? '' : ' cubejs-category-col-parent' : ' cubejs-category-flex') + 
               (r.measure ? ' cubejs-is-measure' : '') + 
               (r.caculated ? ' cubejs-calculated-category' : '')
         
         t = (r.display || r.categoty || r.measure)
+        plus = r.measure ? '' : (r.children ? '' : '') // `<div class="plus" onclick="cubejsCollapse('${id}','${key}', 'col')"></div>`
         div = '<div class="vbox">'
-        div += `<div class="cubejs-cell cubejs-category-cell cubejs-category-col${cls}"><div title="${t}" class="cell-content">${t}</div></div>`
+        div += `<div class="cubejs-cell cubejs-category-cell cubejs-category-col${cls}" key="${key}">${plus}<div title="${t}" class="cell-content">${t}</div></div>`
 
         if (r.children){
             div += '<div class="cubejs-hbox">'
@@ -111,4 +120,27 @@ export default function(cubejs, element){
     }
 
     return html
+}
+
+window['cubejsCollapse'] = function(cubeId, key, head){
+    let o
+    let a = []
+    let cubejs = views[cubeId]
+
+    if (cubejs){
+        if (head=='row'){
+
+        } else {
+            o = cubejs.findCol(key)
+            o.children.forEach(child => {
+                a.push(child.key)
+            })
+            cubejs.mergeCols({
+                key: 'xxx',
+
+            })
+        }
+
+        console.log(o)
+    }
 }

@@ -237,6 +237,110 @@ export default class CubeJS {
         this._calculatedFields[definition.key] = definition
     }
 
+    mergeCols(definition){
+        let cubejs = this
+        let remove = []
+        let obj, parent
+
+        // obtém as colunas que serão removidas(colunas raiz) e a chave da coluna que será mesclada(no caso de mesclar filhos)
+        definition.references.forEach(item => {
+            let col = cubejs.findCol(item)
+            
+            if (col){
+                parent = col.parent
+                if (!parent) remove.push(col) // não remove agora pq generateHeaders precisa das colunas para montar o no header
+            }
+        })
+        if (parent) definition.key = parent.key
+        obj = generateHeaders(cubejs, definition, 'col')
+        remove.forEach(col => { cubejs.removeCol(col) })
+
+        if (!obj){
+            return
+        }
+
+        if (parent){
+            parent.children = obj.root.children
+        } else {
+            cubejs._maps.cols.push(obj.root)
+        }
+
+        // calcula os valores
+        cubejs.forEach(cubejs._maps.rows, row => {
+            let k1, k2, v
+            
+            obj.leafs.forEach(item => {
+                k1 = item.newHeadKey + row.key
+                k2 = item.headKey + row.key
+
+                if (cubejs._maps.keys[k1]){
+                    v = cubejs._maps.keys[k1].value
+                } else {
+                    v = 0
+                }
+
+                v += cubejs._maps.keys[k2].value
+
+                cubejs._maps.keys[k1] = {
+                    value: v,
+                    display: cubejs._formatMeasure(row.measure ? row.key : item.headKey, v)
+                }
+            })
+        })
+    }
+
+    mergeRows(definition){
+        let cubejs = this
+        let obj, parent
+        let remove = []
+
+        // adiciona a nova linha e remove as linhas concatenadas
+        definition.references.forEach(item => {
+            let row = cubejs.findRow(item)
+            
+            if (row){
+                parent = row.parent
+                if (!parent) remove.push(row)
+            }
+        })
+        if (parent) definition.key = parent.key
+        obj = generateHeaders(cubejs, definition, 'row')
+        
+        if (!obj){
+            return
+        }
+        
+        if (parent){
+            parent.children = obj.root.children
+        } else {
+            remove.forEach(row => { cubejs.removeRow(row) })
+            cubejs._maps.rows.push(obj.root)
+        }
+
+        // calcula os valores
+        cubejs.forEach(cubejs._maps.cols, col => {
+            let k1, k2, v
+            
+            obj.leafs.forEach(item => {
+                k1 = col.key + item.newHeadKey
+                k2 = col.key + item.headKey
+
+                if (cubejs._maps.keys[k1]){
+                    v = cubejs._maps.keys[k1].value
+                } else {
+                    v = 0
+                }
+
+                v += cubejs._maps.keys[k2].value
+
+                cubejs._maps.keys[k1] = {
+                    value: v,
+                    display: cubejs._formatMeasure(col.measure ? col.key : item.headKey, v),
+                }
+            })
+        })
+    }
+
     findRow(key){
         let r = this._CACHE.findRow[key]
 
@@ -701,4 +805,56 @@ function getRowRangeValues(cubejs, colKey, kstart, kend) {
     })
 
     return range
+}
+
+function generateHeaders(cubejs, operationDef, finder){
+    let headers = {}
+    let leafs = []
+    let root = {
+        key: operationDef.key,
+        display: operationDef.display
+    }
+    let headCreated = false
+
+    operationDef.references.forEach(k => {
+        let o = finder == 'row' ? cubejs.findRow(k) : cubejs.findCol(k)
+
+        if (o){
+            headCreated = true
+            process(root, o)
+        }
+    })
+
+    return headCreated ? {root, leafs} : null
+
+    function process(newHead, activeHead){
+        let key
+
+        if (activeHead.children){
+            newHead.children = newHead.children || []
+            
+            activeHead.children.forEach(child => {
+                key = newHead.key + (child.category || child.measure)
+                
+                if (!headers[key]){
+                    headers[key] = {
+                        key: key,
+                        display: child.display,
+                        dimension: child.dimension,
+                        measure: child.measure,
+                        parent: newHead,
+                        _index: newHead.children.length
+                    }
+                    newHead.children.push(headers[key])
+                }
+
+                process(headers[key], child)
+            })
+        } else {
+            leafs.push({
+                newHeadKey: newHead.key,
+                headKey: activeHead.key
+            })
+        }
+    }
 }

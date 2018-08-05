@@ -103,12 +103,31 @@ export default [
     //     position: 'before',
     //     reference: 'Channel Partners'
     // }
+    
+    {
+        key: 'merge-1',
+        description: 'Merge cols: Government | Midmarket | Enterprise | Small Business',
+        operation: 'MERGE_COLS',
+        // references: ['Canada', 'Mexico', 'United States of America'],
+        references: ['Government', 'Midmarket', 'Enterprise', 'Small Business'],
+        display: 'Merge1'
+    },
 
     {
-        key: 'merge-america',
+        key: 'merge-Government',
+        description: 'Merge rows: Government 2013 | Government 2014',
+        operation: 'MERGE_COLS',
+        references: ['Government2013', 'Government2014'],
+        display: 'Government'
+    },
+
+    {
+        key: 'merge-2',
+        description: 'Merge rows: Sale Price | Manufacturing Price |Profit',
         operation: 'MERGE_ROWS',
-        references: ['Canada', 'Mexico', 'United States of America'],
-        display: 'America'
+        // references: ['Canada', 'Mexico', 'United States of America'],
+        references: ['Sale Price', 'Manufacturing Price', 'Profit'],
+        display: 'Merge2'
     },
 
     {

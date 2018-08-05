@@ -53,7 +53,7 @@ function csv(){
             {dimension: 'Year'},
         ],
         rows: [
-            {dimension: 'Country'}, 
+            //{dimension: 'Country'}, 
             {measure: 'Sale Price'/*, prefix:'R$ '*/}, 
             {measure: 'Manufacturing Price'/*, prefix:'R$ '*/},
             {measure: 'Profit'}
@@ -87,7 +87,7 @@ function showOperations(operations, cube){
 
     operations.forEach((op, index) => {
         let i = (index<9 ? '0' : '') + (index + 1)
-        let display = op.operation + displayValue(op.dimension) + displayValue(op.position) + displayValue(op.reference) + displayValue(op.expression) 
+        let display = op.description || (op.operation + displayValue(op.dimension) + displayValue(op.position) + displayValue(op.reference) + displayValue(op.expression))
         html += `<label class="input-operation">${i} <input onchange="opCheckbox_onChange(this, ${index})" type="checkbox"> ${display}</label>`
     })
 
