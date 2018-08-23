@@ -1,5 +1,3 @@
-import Functions from "./functions";
-
 // @ts-check
 
 let operations = {}
@@ -251,7 +249,7 @@ export default class CubeJS {
                 if (!parent) remove.push(col) // não remove agora pq generateHeaders precisa das colunas para montar o no header
             }
         })
-        if (parent) definition.key = parent.key
+        if (parent) definition.key = parent['key']
         obj = generateHeaders(cubejs, definition, 'col')
         remove.forEach(col => { cubejs.removeCol(col) })
 
@@ -260,7 +258,7 @@ export default class CubeJS {
         }
 
         if (parent){
-            parent.children = obj.root.children
+            parent['children'] = obj.root.children
         } else {
             cubejs._maps.cols.push(obj.root)
         }
@@ -303,7 +301,7 @@ export default class CubeJS {
                 if (!parent) remove.push(row)
             }
         })
-        if (parent) definition.key = parent.key
+        if (parent) definition.key = parent['key']
         obj = generateHeaders(cubejs, definition, 'row')
         
         if (!obj){
@@ -311,7 +309,7 @@ export default class CubeJS {
         }
         
         if (parent){
-            parent.children = obj.root.children
+            parent['children'] = obj.root.children
         } else {
             remove.forEach(row => { cubejs.removeRow(row) })
             cubejs._maps.rows.push(obj.root)
@@ -461,7 +459,7 @@ export default class CubeJS {
     }
 
     /**
-     * @param {{position, key, measureOpt?, keyRef?}} calculatedOptions 
+     * @param {{position, key, summary?, measureOpt?, keyRef?}} calculatedOptions 
      * @param {Function} callback 
      */
     _createCalculatedRow(calculatedOptions, operationDef, callback){

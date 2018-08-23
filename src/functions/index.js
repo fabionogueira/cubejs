@@ -1,3 +1,5 @@
+// @ts-check
+
 import './VALUE'
 import './VALUES'
 import './RANGE'

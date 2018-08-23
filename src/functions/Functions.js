@@ -1,12 +1,11 @@
-class Functions{
-    static _expressions = {}
+// @ts-check
 
+class Functions{
     constructor(instance, context){
         this.instance = instance
         this.context = context
-        this._expressions = {}
     }
-
+    
     static create(name, fn){
         this.prototype[name] = fn
     }
@@ -14,7 +13,7 @@ class Functions{
     static compile(exp){
         let i, r, c
         
-        if (!this._expressions[exp]){
+        if (!Functions['expressions'][exp]){
             for (i in this.prototype) {
                 r = new RegExp(`\\${i}\\s*\\(`, 'g')
                 c = `this.${i}(`
@@ -24,13 +23,13 @@ class Functions{
             
             // ignora aregra no-new-func do eslint
             /* eslint-disable */
-            this._expressions[exp] = Function('$INDEX', 'return ' + exp)
+            Functions['expressions'][exp] = Function('$INDEX', 'return ' + exp)
             /* eslint-enable */
         }
-
-        return this._expressions[exp]
+        return Functions['expressions'][exp]
     }
 }
+Functions['expressions'] = {}
 
 class FunctionsCache{
     static get(instance, f, key){

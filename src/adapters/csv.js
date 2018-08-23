@@ -29,7 +29,7 @@ export default {
                 o = all[h]
 
                 if (o){
-                    v = currentline[j].trim()
+                    v = currentline[j].trim().replace(',','.')
                     k += o.dimension ? v : h
                     
                     if (o.measure){

@@ -1,6 +1,6 @@
 // @ts-check
 
-import './cubejs.css'
+// import './cubejs.css'
 
 let views = {}
 
