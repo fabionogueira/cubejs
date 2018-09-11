@@ -2121,7 +2121,7 @@ exports.default = {
                 o = all[h];
 
                 if (o) {
-                    v = currentline[j].trim();
+                    v = currentline[j].trim().replace(',', '.');
                     k += o.dimension ? v : h;
 
                     if (o.measure) {
@@ -2142,8 +2142,114 @@ exports.default = {
         }
 
         return arr;
+    },
+    header: function header(data) {
+        var value = void 0,
+            type = void 0,
+            datatype = void 0;
+        var arr = [];
+        var lines = data.csvContent.split('\n');
+        var headers = lines[0].split(';');
+        var line1 = lines[1] ? lines[1].split(';') : [];
+
+        headers.forEach(function (name, index) {
+            name = name.trim();
+            value = line1[index];
+
+            if (value) {
+                type = isNaN(Number(value)) ? 'dimension' : 'measure';
+                datatype = type == 'measure' ? 'number' : stringIsDate(value) ? 'date' : 'string';
+            } else {
+                type = null;
+                datatype = 'string';
+            }
+
+            arr.push({
+                name: name,
+                type: type || 'dimension',
+                datatype: datatype
+            });
+        });
+    },
+    toDataset: function toDataset(data) {
+        var headers = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+        var limit = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
+
+        var i = void 0,
+            j = void 0,
+            v = void 0,
+            h = void 0,
+            o = void 0,
+            k = void 0;
+        var all = {};
+        var rows = {};
+        var measureValues = {};
+        var arr = [];
+        var lines = data.split('\n', limit);
+        var obj = void 0,
+            currentline = void 0;
+
+        headers = headers || this.headers(data);
+
+        headers.forEach(function (item) {
+            all[item.name] = item;
+        });
+
+        for (i = 1; i < lines.length; i++) {
+            obj = {};
+            k = '';
+            currentline = lines[i].split(";");
+
+            for (j = 0; j < headers.length; j++) {
+                h = headers[j];
+                o = all[h.name];
+
+                if (o) {
+                    v = o.custom ? 0 : currentline[j].trim().replace(',', '.');
+                    k += o.type == 'dimension' ? v : h.name;
+
+                    if (o.type == 'measure') {
+                        v = Number(v);
+                        measureValues[k] = (measureValues[k] || 0) + v;
+                        obj[h.name] = measureValues[k];
+                    } else {
+                        obj[h.name] = v;
+                    }
+                }
+            }
+
+            rows[k] = obj;
+        }
+
+        for (i in rows) {
+            arr.push(rows[i]);
+        }
+
+        return arr;
     }
 };
+
+
+function stringIsDate(value) {
+    var d = void 0;
+
+    if (!value) {
+        return false;
+    }
+
+    if (!isNaN(Number(value))) {
+        return false;
+    }
+
+    if (value.split('/').length == 3 || value.split('-').length == 3) {
+        d = new Date(value);
+
+        // @ts-ignore
+        return d != 'Invalid Date';
+    }
+
+    return false;
+}
 
 /***/ }),
 
@@ -2346,12 +2452,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _functions = __webpack_require__(/*! ./functions */ "./src/functions/index.js");
-
-var _functions2 = _interopRequireDefault(_functions);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2647,7 +2747,7 @@ var CubeJS = function () {
                     if (!parent) remove.push(col); // não remove agora pq generateHeaders precisa das colunas para montar o no header
                 }
             });
-            if (parent) definition.key = parent.key;
+            if (parent) definition.key = parent['key'];
             obj = generateHeaders(cubejs, definition, 'col');
             remove.forEach(function (col) {
                 cubejs.removeCol(col);
@@ -2658,7 +2758,7 @@ var CubeJS = function () {
             }
 
             if (parent) {
-                parent.children = obj.root.children;
+                parent['children'] = obj.root.children;
             } else {
                 cubejs._maps.cols.push(obj.root);
             }
@@ -2705,7 +2805,7 @@ var CubeJS = function () {
                     if (!parent) remove.push(row);
                 }
             });
-            if (parent) definition.key = parent.key;
+            if (parent) definition.key = parent['key'];
             obj = generateHeaders(cubejs, definition, 'row');
 
             if (!obj) {
@@ -2713,7 +2813,7 @@ var CubeJS = function () {
             }
 
             if (parent) {
-                parent.children = obj.root.children;
+                parent['children'] = obj.root.children;
             } else {
                 remove.forEach(function (row) {
                     cubejs.removeRow(row);
@@ -2880,7 +2980,7 @@ var CubeJS = function () {
         }
 
         /**
-         * @param {{position, key, measureOpt?, keyRef?}} calculatedOptions 
+         * @param {{position, key, summary?, measureOpt?, keyRef?}} calculatedOptions 
          * @param {Function} callback 
          */
 
@@ -3343,13 +3443,14 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+// @ts-check
+
 var Functions = function () {
     function Functions(instance, context) {
         _classCallCheck(this, Functions);
 
         this.instance = instance;
         this.context = context;
-        this._expressions = {};
     }
 
     _createClass(Functions, null, [{
@@ -3364,7 +3465,7 @@ var Functions = function () {
                 r = void 0,
                 c = void 0;
 
-            if (!this._expressions[exp]) {
+            if (!Functions['expressions'][exp]) {
                 for (i in this.prototype) {
                     r = new RegExp('\\' + i + '\\s*\\(', 'g');
                     c = 'this.' + i + '(';
@@ -3374,18 +3475,17 @@ var Functions = function () {
 
                 // ignora aregra no-new-func do eslint
                 /* eslint-disable */
-                this._expressions[exp] = Function('$INDEX', 'return ' + exp);
+                Functions['expressions'][exp] = Function('$INDEX', 'return ' + exp);
                 /* eslint-enable */
             }
-
-            return this._expressions[exp];
+            return Functions['expressions'][exp];
         }
     }]);
 
     return Functions;
 }();
 
-Functions._expressions = {};
+Functions['expressions'] = {};
 
 var FunctionsCache = function () {
     function FunctionsCache() {
@@ -3693,6 +3793,8 @@ __webpack_require__(/*! ./SUM */ "./src/functions/SUM.js");
 __webpack_require__(/*! ./IF */ "./src/functions/IF.js");
 
 var _Functions = __webpack_require__(/*! ./Functions */ "./src/functions/Functions.js");
+
+// @ts-check
 
 exports.default = _Functions.Functions;
 exports.Functions = _Functions.Functions;
@@ -4237,9 +4339,11 @@ exports.default = function (cubejs, element, id) {
     return html;
 };
 
-__webpack_require__(/*! ./cubejs.css */ "./src/cubejs.css");
+// @ts-check
 
-var views = {}; // @ts-check
+// import './cubejs.css'
+
+var views = {};
 
 window['cubejsCollapse'] = function (cubeId, key, head) {
     var o = void 0;
