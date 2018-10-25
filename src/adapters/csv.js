@@ -106,7 +106,7 @@ export default {
                 o = all[h.name]
 
                 if (o){
-                    v = o.custom ? 0 : currentline[j].trim().replace(',','.')
+                    v = o.expression ? 0 : currentline[j].trim().replace(',','.')
                     k += o.type == 'dimension' ? v : h.name
                     
                     if (o.type == 'measure'){

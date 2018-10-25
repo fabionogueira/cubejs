@@ -7,7 +7,8 @@ export default [
     {
         key: 'opSortRows',
         operation: 'SORT_ROWS',
-        dimension: 'Country'
+        dimension: 'Country',
+        order: 'desc'
     },
 
     {

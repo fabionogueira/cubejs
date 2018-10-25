@@ -1,5 +1,7 @@
 // @ts-check
 
+import DataFormat from './data-format'
+
 let operations = {}
 let instanceId = 0
 let dataId = 0;
@@ -41,15 +43,18 @@ export default class CubeJS {
     /**
      * @param {{rows:Array<any>, cols:Array<any>, filters?:Array<any>}} definition 
      */
-    constructor(definition, adapter = null){
+    constructor(definition){
         this._instanceId = instanceId++
         this._definition = definition
-        this._data = []
+        this._dataset = []
         this._maps = {
             keys: {},
             rows: [],
             cols: []
         }
+        this._aggregations = {}
+        this._dimensions = {}
+        this._measures = {}
         this._operations = []
         this._operationsKeys = {}
         this._categoryAlias = {}
@@ -61,24 +66,47 @@ export default class CubeJS {
 
         definition.rows.forEach((item, index) => {
             definition.rows[index] = Object.assign({}, DEFAULT_OPERATION_OPTIONS, item)
+            
+            item.$categoriesOf = 'row'
+
+            if (item.dimension) this._dimensions[item.dimension] = item
+            if (item.measure) this._measures[item.measure] = item
         })
         definition.cols.forEach((item, index) => {
             definition.cols[index] = Object.assign({}, DEFAULT_OPERATION_OPTIONS, item)
+
+            item.$categoriesOf = 'col'
+
+            if (item.dimension) this._dimensions[item.dimension] = item
+            if (item.measure) this._measures[item.measure] = item
         })
-        console.log(this)
-        this._adapter = adapter
+    }
+
+    clone(){
+        let clone = new CubeJS(this._definition)
+
+        clone._operations = this._operations
+        clone._operationsKeys = this._operationsKeys
+        clone._categoryAlias = this._categoryAlias
+        clone._aux = this._aux
+        
+        clone._calculatedFields = this._calculatedFields
+        clone.setDataset(this._dataset)
+
+        clone._headers = this._headers
+        clone._maps = JSON.parse(JSON.stringify(this._maps))
+
+        return clone
     }
 
     getDefinition(){
         return this._definition
     }
 
-    setData(data){
-        let adapter = adapters[this._adapter]
-
+    setDataset(dataset){
         this._categoryAlias = {}
         this._dataId = dataId++
-        this._data = adapter ? adapter.response(this, data) : data
+        this._dataset = dataset // adapter ? adapter.response(this, dataset) : dataset
         this._peddings = true
 
         // limpa todo o cache
@@ -86,17 +114,20 @@ export default class CubeJS {
 
         // processa métricas calculadas
         if (this._calculatedFields){
-            this._data.forEach(row => {
+            this._dataset.forEach(row => {
                 for (let k in this._calculatedFields){
                     row[k] = this._calculatedFields[k].expression(row)
                 }
             })
         }
+
+        return this
     }
 
     applyOperations(force = false){
         if (this._peddings || force){
 
+            this._headers = {}
             this._maps = {
                 keys: {},
                 rows: [],
@@ -116,13 +147,83 @@ export default class CubeJS {
             })
     
             // executa as operações
-            this._operations.forEach(def => { this._doOperation(def) })            
+            this._operations.forEach(def => { this._doOperation(def) })
         }
     }
 
     getQuery(){
-        let adapter = adapters[this._adapter]
-        return adapter ? adapter.request(this) : this._definition
+        // let adapter = adapters[this._adapter]
+        // return adapter ? adapter.request(this) : this._definition
+    }
+
+    // agrega valores de uma célula, somando todos os seus filhos
+    aggregateByCategory(category){
+        let maps = this._maps
+        let f = this._dimensions[category.dimension]
+        
+        if (!f || !category.children){
+            return
+        }
+
+        if (f.$categoriesOf == 'row'){
+            maps.cols.forEach(c => {
+                this.eachLeaf(c, leafCol => {
+                    let s = 0
+    
+                    this.eachLeaf(category, leafRow => {
+                        let k = leafCol.key + leafRow.key
+                        let cell = maps.keys[k]
+                        
+                        if (cell){
+                            s += cell.value
+                            delete(maps.keys[k])
+                        }
+                    })
+    
+                    maps.keys[leafCol.key + category.key] = {
+                        value: s,
+                        display: s
+                    }
+                })
+            })
+            
+        } else if (f.$categoriesOf == 'col'){
+            maps.rows.forEach(r => {
+                this.eachLeaf(r, leafRow => {
+                    let s = 0
+    
+                    this.eachLeaf(category, leafCol => {
+                        let k = leafCol.key + leafRow.key
+                        let cell = maps.keys[k]
+                        
+                        if (cell){
+                            s += cell.value
+                            delete(maps.keys[k])
+                        }
+                    })
+    
+                    maps.keys[category.key + leafRow.key] = {
+                        value: s,
+                        display: s
+                    }
+                })
+            })
+            
+        }
+        
+        delete(category.children)
+    }
+
+    aggregateRowByLevel(level){
+        this.forEach(this._maps.rows, (r) => {
+            this.aggregateByCategory(r)
+        }, level)        
+    }
+
+    aggregateColByLevel(level){
+        this.forEach(this._maps.cols, (c) => {
+            this.aggregateByCategory(c)
+        }, level)
     }
 
     getMaps(){
@@ -201,8 +302,9 @@ export default class CubeJS {
 
     removeRow(row){
         let arr
+        let parent = this._getHeader(row.parentKey)
 
-        arr = row.parent ? row.parent : this._maps.rows
+        arr = parent ? parent : this._maps.rows
         arr.splice(row._index, 1)
 
         // limpa o cache
@@ -216,8 +318,9 @@ export default class CubeJS {
 
     removeCol(col){
         let arr
+        let parent = this._getHeader(col.parentKey)
         
-        arr = col.parent ? col.parent : this._maps.cols
+        arr = parent ? parent : this._maps.cols
         arr.splice(col._index, 1)
 
         // limpa o cache
@@ -245,7 +348,7 @@ export default class CubeJS {
             let col = cubejs.findCol(item)
             
             if (col){
-                parent = col.parent
+                parent = this._getHeader(col.parentKey)
                 if (!parent) remove.push(col) // não remove agora pq generateHeaders precisa das colunas para montar o no header
             }
         })
@@ -292,12 +395,11 @@ export default class CubeJS {
         let obj, parent
         let remove = []
 
-        // adiciona a nova linha e remove as linhas concatenadas
         definition.references.forEach(item => {
             let row = cubejs.findRow(item)
             
             if (row){
-                parent = row.parent
+                parent = this._getHeader(row.parentKey)
                 if (!parent) remove.push(row)
             }
         })
@@ -424,7 +526,7 @@ export default class CubeJS {
     // TODO: implements cache
     forEach(arr, callback, level = -1){
         
-        doForEach(arr, level)
+        doForEach(arr, 0)
     
         function doForEach(arr, activeLevel){
             let i, item
@@ -463,17 +565,18 @@ export default class CubeJS {
      * @param {Function} callback 
      */
     _createCalculatedRow(calculatedOptions, operationDef, callback){
-        let v, arr, o
+        let v, arr, o, parent
         let row = calculatedOptions.position == 'last' ? this.findLastRow() : this.findRow(calculatedOptions.keyRef)
         
         if (row){
-            arr = row.parent ? row.parent.children : this._maps.rows
+            parent = this._getHeader(row.parentKey)
+            arr = parent ? parent.children : this._maps.rows
             o = {
                 key: calculatedOptions.key,
                 measure: calculatedOptions.key,
                 caculated: true,
                 summary: calculatedOptions.summary,
-                parent: row.parent
+                parentKey: parent.key
             }
             
             this._aux.measures[calculatedOptions.key] = Object.assign({key:calculatedOptions.key}, DEFAULT_OPERATION_OPTIONS, operationDef)
@@ -511,17 +614,18 @@ export default class CubeJS {
     }
 
     _createCalculatedCol(calculatedOptions, operationDef, callback){
-        let v, arr, o
+        let v, arr, o, parent
         let col = calculatedOptions.position == 'last' ? this.findLastCol() : this.findCol(calculatedOptions.keyRef)
         
         if (col){
-            arr = col.parent ? col.parent.children : this._maps.cols
+            parent = this._getHeader(col.parentKey)
+            arr = parent ? parent.children : this._maps.cols
             o = {
                 key: calculatedOptions.key,
                 measure: calculatedOptions.key,
                 caculated: true,
                 summary: calculatedOptions.summary,
-                parent: col.parent
+                parentKey: parent.key
             }
         
             this._aux.measures[calculatedOptions.key] = Object.assign({key:calculatedOptions.key}, DEFAULT_OPERATION_OPTIONS, operationDef)
@@ -559,16 +663,13 @@ export default class CubeJS {
 
     _createHead(def, root){
         let self = this
-        let exists = {
-            item:{},
-            children:{}
-        }
-    
-        this._data.forEach(row => {
-            processDataRow(row, 0, '', root, null)
+        let exists = {}
+
+        this._dataset.forEach(row => {
+            processDataRow(row, 0, '', root)
         })
-    
-        function processDataRow(dataRow, defIndex, parentKey, children, parent){
+        
+        function processDataRow(dataRow, defIndex, parentKey, children){
             let k, o, a, d, item
     
             item = def[defIndex]
@@ -583,31 +684,28 @@ export default class CubeJS {
                         key: k,
                         dimension: item.dimension,
                         category: d,
-                        display: self._categoryAlias[d] || d,
-                        parent: null,
+                        display: self._formatCategory(item, self._categoryAlias[d] || d),
+                        parentKey: null,
                         children: null,
                         _index: null
                     }
                     
-                    if (k == "Government2013"){
-                        //debugger
-                    }
-
                     if (!exists[k]){
+                        self._headers[k] = o
                         exists[k] = {
                             children: a,
                             item: o
                         }
                         o._index = children.length
                         children.push(o)
-                        o.parent = parent
-                        processDataRow(dataRow, defIndex + 1, k, a, o)
+                        o.parentKey = parentKey
+                        processDataRow(dataRow, defIndex + 1, k, a)
                         
                         if (a.length > 0){
                             o.children = a
                         }
                     } else {
-                        processDataRow(dataRow, defIndex + 1, k, exists[k].children, exists[k].item)
+                        processDataRow(dataRow, defIndex + 1, k, exists[k].children)
                     }
     
                 } else {
@@ -615,26 +713,31 @@ export default class CubeJS {
                     o = {
                         key: k,
                         measure: item.measure,
-                        display: self._categoryAlias[item.measure] || item.measure,
-                        parent: null,
+                        display: self._categoryAlias[item.measure] || item.display || item.measure,
+                        parentKey: null,
                         _index: null
                     }
                     
                     if (!exists[k]){
+                        self._headers[k] = o
                         exists[k] = {
                             children,
                             item: o
                         }
                         o._index = children.length
                         children.push(o)
-                        o.parent = parent
-                        processDataRow(dataRow, defIndex + 1, parentKey, children, parent)
+                        o.parentKey = parentKey
+                        processDataRow(dataRow, defIndex + 1, parentKey, children)
                     } else {
-                        processDataRow(dataRow, defIndex + 1, parentKey, exists[k].children, parent)
+                        processDataRow(dataRow, defIndex + 1, parentKey, exists[k].children)
                     }
                 } 
             }
         }
+    }
+
+    _getHeader(key){
+        return this._headers[key]
     }
 
     // cria this._maps.keys
@@ -642,7 +745,7 @@ export default class CubeJS {
         let i, s, k, item
         let aux = this._aux
         
-        this._data.forEach(r => {
+        this._dataset.forEach(r => {
             s = ''
 
             for (i = 0; i < aux.all.length; i++){
@@ -741,9 +844,15 @@ export default class CubeJS {
         return formated
     }
 
+    _formatCategory(category, value){
+        value = DataFormat.Text.format(category, value)
+        return value
+    }
+
 }
 
 function getColRangeValues(cubejs, rowKey, kstart, kend) {
+    let parent
     let aux, arr, start, end
     let range = []
 
@@ -756,7 +865,9 @@ function getColRangeValues(cubejs, rowKey, kstart, kend) {
         end = aux
     }
 
-    arr = start.parent ? start.parent.children : cubejs._maps.cols
+    parent = this._getHeader(start.parentKey)
+
+    arr = parent ? parent.children : cubejs._maps.cols
     arr.forEach((item, index) => {
         if (index <= end._index){
             
@@ -776,6 +887,7 @@ function getColRangeValues(cubejs, rowKey, kstart, kend) {
 }
 
 function getRowRangeValues(cubejs, colKey, kstart, kend) {
+    let parent
     let aux, arr, start, end
     let range = []
     
@@ -788,7 +900,9 @@ function getRowRangeValues(cubejs, colKey, kstart, kend) {
         end = aux
     }
 
-    arr = start.parent ? start.parent.children : cubejs._maps.rows
+    parent = this._getHeader(start.parentKey)
+
+    arr = parent ? parent.children : cubejs._maps.rows
     arr.forEach((item, index) => {
         if (index <= end._index){
             cubejs.eachLeaf(item, leaf => {
@@ -840,7 +954,7 @@ function generateHeaders(cubejs, operationDef, finder){
                         display: child.display,
                         dimension: child.dimension,
                         measure: child.measure,
-                        parent: newHead,
+                        parentKey: newHead.key,
                         _index: newHead.children.length
                     }
                     newHead.children.push(headers[key])
