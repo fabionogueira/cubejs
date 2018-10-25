@@ -82,13 +82,15 @@ export default {
     },
 
     toDataset(data, headers = null, limit = undefined){
-        let i, j, v, h, o, k
+        let i, j, v, h, o, k, lines
         let all = {}
         let rows = {}
         let measureValues = {}
         let arr = []
-        let lines = data.split('\n', limit)
         let obj, currentline
+
+        data = data || ''
+        lines = data.split('\n', limit)
 
         headers = headers || this.headers(data)
 
