@@ -165,10 +165,19 @@ export default class CubeJS {
             return
         }
 
+        if (!category.aggr){
+            category.aggr = {
+                children: category.children,
+                include: {},
+                exclude: {}
+            }
+        }
+
         if (f.$categoriesOf == 'row'){
             maps.cols.forEach(c => {
                 this.eachLeaf(c, leafCol => {
                     let s = 0
+                    let k = leafCol.key + category.key
     
                     this.eachLeaf(category, leafRow => {
                         let k = leafCol.key + leafRow.key
@@ -176,11 +185,12 @@ export default class CubeJS {
                         
                         if (cell){
                             s += cell.value
+                            category.aggr.exclude[k] = maps.keys[k]
                             delete(maps.keys[k])
                         }
                     })
-    
-                    maps.keys[leafCol.key + category.key] = {
+                    
+                    category.aggr.include[k] = maps.keys[k] = {
                         value: s,
                         display: s
                     }
@@ -191,6 +201,7 @@ export default class CubeJS {
             maps.rows.forEach(r => {
                 this.eachLeaf(r, leafRow => {
                     let s = 0
+                    let k = category.key + leafRow.key
     
                     this.eachLeaf(category, leafCol => {
                         let k = leafCol.key + leafRow.key
@@ -198,11 +209,12 @@ export default class CubeJS {
                         
                         if (cell){
                             s += cell.value
+                            category.aggr.exclude[k] = maps.keys[k]
                             delete(maps.keys[k])
                         }
                     })
-    
-                    maps.keys[category.key + leafRow.key] = {
+
+                    category.aggr.include[k] = maps.keys[k] = {
                         value: s,
                         display: s
                     }
@@ -212,6 +224,28 @@ export default class CubeJS {
         }
         
         delete(category.children)
+    }
+
+    // desagrega valores de uma célula
+    unAggregateByCategory(category){
+        let k, o
+        let keys = this._maps.keys
+        let aggr = category.aggr
+        
+        if (aggr){
+            category.children = aggr.children
+            
+            for (k in aggr.include){
+                delete(keys[k])
+            }
+
+            for (k in aggr.exclude){
+                o = aggr.exclude[k]
+                keys[k] = o
+            }
+
+            delete(category.aggr)
+        }
     }
 
     aggregateRowByLevel(level){
