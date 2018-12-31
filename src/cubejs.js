@@ -610,7 +610,7 @@ export default class CubeJS {
                 measure: calculatedOptions.key,
                 caculated: true,
                 summary: calculatedOptions.summary,
-                parentKey: parent.key
+                parentKey: parent ? parent.key : null
             }
             
             this._aux.measures[calculatedOptions.key] = Object.assign({key:calculatedOptions.key}, DEFAULT_OPERATION_OPTIONS, operationDef)
