@@ -375,7 +375,8 @@ export default class CubeJS {
     mergeCols(definition){
         let cubejs = this
         let remove = []
-        let obj, parent
+        let obj
+        let parent
 
         // obtém as colunas que serão removidas(colunas raiz) e a chave da coluna que será mesclada(no caso de mesclar filhos)
         definition.references.forEach(item => {
@@ -395,13 +396,15 @@ export default class CubeJS {
         }
 
         if (parent){
-            parent['children'] = obj.root.children
+            //@ts-ignore
+            parent.children = obj.root.children
         } else {
+            obj.root._index = cubejs._maps.cols.length 
             cubejs._maps.cols.push(obj.root)
         }
 
         // calcula os valores
-        cubejs.forEach(cubejs._maps.rows, row => {
+        cubejs.forEach(cubejs._maps.rows, (row) => {
             let k1, k2, v
             
             obj.leafs.forEach(item => {
@@ -418,7 +421,7 @@ export default class CubeJS {
 
                 cubejs._maps.keys[k1] = {
                     value: v,
-                    display: cubejs._formatMeasure(row.measure ? row.key : item.headKey, v)
+                    display: cubejs._formatMeasure(/* row.measure ? row.key : item.headKey */row.measure || item.headKey, v)
                 }
             })
         })
@@ -445,9 +448,11 @@ export default class CubeJS {
         }
         
         if (parent){
-            parent['children'] = obj.root.children
+            //@ts-ignore
+            parent.children = obj.root.children
         } else {
             remove.forEach(row => { cubejs.removeRow(row) })
+            obj.root._index = cubejs._maps.rows.length
             cubejs._maps.rows.push(obj.root)
         }
 
@@ -469,7 +474,7 @@ export default class CubeJS {
 
                 cubejs._maps.keys[k1] = {
                     value: v,
-                    display: cubejs._formatMeasure(col.measure ? col.key : item.headKey, v),
+                    display: cubejs._formatMeasure(/*col.measure ? col.key : item.headKey*/ col.measure || item.headKey, v)
                 }
             })
         })
@@ -603,14 +608,14 @@ export default class CubeJS {
         let row = calculatedOptions.position == 'last' ? this.findLastRow() : this.findRow(calculatedOptions.keyRef)
         
         if (row){
-            parent = this._getHeader(row.parentKey)
-            arr = parent ? parent.children : this._maps.rows
+            parent = this._getHeader(row.parentKey) || {key:''}
+            arr = parent.children || this._maps.rows
             o = {
                 key: calculatedOptions.key,
                 measure: calculatedOptions.key,
                 caculated: true,
                 summary: calculatedOptions.summary,
-                parentKey: parent ? parent.key : null
+                parentKey: parent.key
             }
             
             this._aux.measures[calculatedOptions.key] = Object.assign({key:calculatedOptions.key}, DEFAULT_OPERATION_OPTIONS, operationDef)
@@ -652,8 +657,8 @@ export default class CubeJS {
         let col = calculatedOptions.position == 'last' ? this.findLastCol() : this.findCol(calculatedOptions.keyRef)
         
         if (col){
-            parent = this._getHeader(col.parentKey)
-            arr = parent ? parent.children : this._maps.cols
+            parent = this._getHeader(col.parentKey) || {key:''}
+            arr = parent.children || this._maps.cols
             o = {
                 key: calculatedOptions.key,
                 measure: calculatedOptions.key,
@@ -868,6 +873,9 @@ export default class CubeJS {
 
         if (formated == undefined){
             def = this._aux.measures[measure]
+            if (!def){
+                debugger
+            }
             num = parseInt(value).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, `$1${def.thousand}`)
             rest = value.toFixed(def.precision).split('.')[1] || ''
             
@@ -899,7 +907,7 @@ function getColRangeValues(cubejs, rowKey, kstart, kend) {
         end = aux
     }
 
-    parent = this._getHeader(start.parentKey)
+    parent = cubejs._getHeader(start.parentKey)
 
     arr = parent ? parent.children : cubejs._maps.cols
     arr.forEach((item, index) => {
@@ -934,7 +942,7 @@ function getRowRangeValues(cubejs, colKey, kstart, kend) {
         end = aux
     }
 
-    parent = this._getHeader(start.parentKey)
+    parent = cubejs._getHeader(start.parentKey)
 
     arr = parent ? parent.children : cubejs._maps.rows
     arr.forEach((item, index) => {

@@ -6,6 +6,7 @@ import Axios from 'axios'
 import view from './view'
 import operationsElastic from './operations.elastic'
 import operationsCsv from './operations.csv'
+import csvAdapter from '../src/adapters/csv'
 
 // @ts-ignore
 import csvData from './data1.csv'
@@ -47,7 +48,16 @@ function elasticsearch(){
 }
 
 function csv(){
-    const definition = {
+    let cube, definition, data
+
+    CubeJS.defaults({
+        precision: 0,
+        thousand: '',
+        decimal: ','
+    })
+
+    data = csvAdapter.toDataset(csvData)
+    definition = {
         cols: [
             {dimension: 'Segment'}, 
             {dimension: 'Year'},
@@ -61,12 +71,7 @@ function csv(){
         filters: []
     }
     
-    CubeJS.defaults({
-        precision: 0,
-        thousand: '',
-        decimal: ','
-    })
-    const cube = new CubeJS(definition, 'csv')
+    cube = new CubeJS(definition)
     
     cube.createField({
         key: 'Profit',
@@ -74,7 +79,7 @@ function csv(){
             return row['Sale Price'] - row['Manufacturing Price']
         }
     })
-    cube.setData(csvData)
+    cube.setDataset(data)
     
     showOperations(operationsCsv, cube)
     renderCube(cube)

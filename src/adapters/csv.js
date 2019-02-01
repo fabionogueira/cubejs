@@ -57,7 +57,7 @@ export default {
     header(data){
         let value, type, datatype
         let arr = []
-        let lines = data.csvContent.split('\n')
+        let lines = data.split('\n')
         let headers = lines[0].split(';')
         let line1 = lines[1] ? lines[1].split(';') : []
 
@@ -79,6 +79,8 @@ export default {
                 datatype: datatype
             })
         })
+
+        return arr
     },
 
     toDataset(data, headers = null, limit = undefined){
@@ -92,7 +94,7 @@ export default {
         data = data || ''
         lines = data.split('\n', limit)
 
-        headers = headers || this.headers(data)
+        headers = headers || this.header(data)
 
         headers.forEach(item => {
             all[item.name] = item

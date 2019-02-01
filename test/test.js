@@ -2148,7 +2148,7 @@ exports.default = {
             type = void 0,
             datatype = void 0;
         var arr = [];
-        var lines = data.csvContent.split('\n');
+        var lines = data.split('\n');
         var headers = lines[0].split(';');
         var line1 = lines[1] ? lines[1].split(';') : [];
 
@@ -2170,6 +2170,8 @@ exports.default = {
                 datatype: datatype
             });
         });
+
+        return arr;
     },
     toDataset: function toDataset(data) {
         var headers = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
@@ -2180,16 +2182,19 @@ exports.default = {
             v = void 0,
             h = void 0,
             o = void 0,
-            k = void 0;
+            k = void 0,
+            lines = void 0;
         var all = {};
         var rows = {};
         var measureValues = {};
         var arr = [];
-        var lines = data.split('\n', limit);
         var obj = void 0,
             currentline = void 0;
 
-        headers = headers || this.headers(data);
+        data = data || '';
+        lines = data.split('\n', limit);
+
+        headers = headers || this.header(data);
 
         headers.forEach(function (item) {
             all[item.name] = item;
@@ -2205,7 +2210,7 @@ exports.default = {
                 o = all[h.name];
 
                 if (o) {
-                    v = o.custom ? 0 : currentline[j].trim().replace(',', '.');
+                    v = o.expression ? 0 : currentline[j].trim().replace(',', '.');
                     k += o.type == 'dimension' ? v : h.name;
 
                     if (o.type == 'measure') {
@@ -2451,11 +2456,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); // @ts-check
+
+var _dataFormat = __webpack_require__(/*! ./data-format */ "./src/data-format.js");
+
+var _dataFormat2 = _interopRequireDefault(_dataFormat);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-// @ts-check
 
 var operations = {};
 var instanceId = 0;
@@ -2508,18 +2517,21 @@ var CubeJS = function () {
     }]);
 
     function CubeJS(definition) {
-        var adapter = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+        var _this = this;
 
         _classCallCheck(this, CubeJS);
 
         this._instanceId = instanceId++;
         this._definition = definition;
-        this._data = [];
+        this._dataset = [];
         this._maps = {
             keys: {},
             rows: [],
             cols: []
         };
+        this._aggregations = {};
+        this._dimensions = {};
+        this._measures = {};
         this._operations = [];
         this._operationsKeys = {};
         this._categoryAlias = {};
@@ -2531,29 +2543,53 @@ var CubeJS = function () {
 
         definition.rows.forEach(function (item, index) {
             definition.rows[index] = Object.assign({}, DEFAULT_OPERATION_OPTIONS, item);
+
+            item.$categoriesOf = 'row';
+
+            if (item.dimension) _this._dimensions[item.dimension] = item;
+            if (item.measure) _this._measures[item.measure] = item;
         });
         definition.cols.forEach(function (item, index) {
             definition.cols[index] = Object.assign({}, DEFAULT_OPERATION_OPTIONS, item);
+
+            item.$categoriesOf = 'col';
+
+            if (item.dimension) _this._dimensions[item.dimension] = item;
+            if (item.measure) _this._measures[item.measure] = item;
         });
-        console.log(this);
-        this._adapter = adapter;
     }
 
     _createClass(CubeJS, [{
+        key: 'clone',
+        value: function clone() {
+            var clone = new CubeJS(this._definition);
+
+            clone._operations = this._operations;
+            clone._operationsKeys = this._operationsKeys;
+            clone._categoryAlias = this._categoryAlias;
+            clone._aux = this._aux;
+
+            clone._calculatedFields = this._calculatedFields;
+            clone.setDataset(this._dataset);
+
+            clone._headers = this._headers;
+            clone._maps = JSON.parse(JSON.stringify(this._maps));
+
+            return clone;
+        }
+    }, {
         key: 'getDefinition',
         value: function getDefinition() {
             return this._definition;
         }
     }, {
-        key: 'setData',
-        value: function setData(data) {
-            var _this = this;
-
-            var adapter = adapters[this._adapter];
+        key: 'setDataset',
+        value: function setDataset(dataset) {
+            var _this2 = this;
 
             this._categoryAlias = {};
             this._dataId = dataId++;
-            this._data = adapter ? adapter.response(this, data) : data;
+            this._dataset = dataset; // adapter ? adapter.response(this, dataset) : dataset
             this._peddings = true;
 
             // limpa todo o cache
@@ -2561,22 +2597,25 @@ var CubeJS = function () {
 
             // processa métricas calculadas
             if (this._calculatedFields) {
-                this._data.forEach(function (row) {
-                    for (var k in _this._calculatedFields) {
-                        row[k] = _this._calculatedFields[k].expression(row);
+                this._dataset.forEach(function (row) {
+                    for (var k in _this2._calculatedFields) {
+                        row[k] = _this2._calculatedFields[k].expression(row);
                     }
                 });
             }
+
+            return this;
         }
     }, {
         key: 'applyOperations',
         value: function applyOperations() {
-            var _this2 = this;
+            var _this3 = this;
 
             var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
 
             if (this._peddings || force) {
 
+                this._headers = {};
                 this._maps = {
                     keys: {},
                     rows: [],
@@ -2597,15 +2636,132 @@ var CubeJS = function () {
 
                 // executa as operações
                 this._operations.forEach(function (def) {
-                    _this2._doOperation(def);
+                    _this3._doOperation(def);
                 });
             }
         }
     }, {
         key: 'getQuery',
-        value: function getQuery() {
-            var adapter = adapters[this._adapter];
-            return adapter ? adapter.request(this) : this._definition;
+        value: function getQuery() {}
+        // let adapter = adapters[this._adapter]
+        // return adapter ? adapter.request(this) : this._definition
+
+
+        // agrega valores de uma célula, somando todos os seus filhos
+
+    }, {
+        key: 'aggregateByCategory',
+        value: function aggregateByCategory(category) {
+            var _this4 = this;
+
+            var maps = this._maps;
+            var f = this._dimensions[category.dimension];
+
+            if (!f || !category.children) {
+                return;
+            }
+
+            if (!category.aggr) {
+                category.aggr = {
+                    children: category.children,
+                    include: {},
+                    exclude: {}
+                };
+            }
+
+            if (f.$categoriesOf == 'row') {
+                maps.cols.forEach(function (c) {
+                    _this4.eachLeaf(c, function (leafCol) {
+                        var s = 0;
+                        var k = leafCol.key + category.key;
+
+                        _this4.eachLeaf(category, function (leafRow) {
+                            var k = leafCol.key + leafRow.key;
+                            var cell = maps.keys[k];
+
+                            if (cell) {
+                                s += cell.value;
+                                category.aggr.exclude[k] = maps.keys[k];
+                                delete maps.keys[k];
+                            }
+                        });
+
+                        category.aggr.include[k] = maps.keys[k] = {
+                            value: s,
+                            display: s
+                        };
+                    });
+                });
+            } else if (f.$categoriesOf == 'col') {
+                maps.rows.forEach(function (r) {
+                    _this4.eachLeaf(r, function (leafRow) {
+                        var s = 0;
+                        var k = category.key + leafRow.key;
+
+                        _this4.eachLeaf(category, function (leafCol) {
+                            var k = leafCol.key + leafRow.key;
+                            var cell = maps.keys[k];
+
+                            if (cell) {
+                                s += cell.value;
+                                category.aggr.exclude[k] = maps.keys[k];
+                                delete maps.keys[k];
+                            }
+                        });
+
+                        category.aggr.include[k] = maps.keys[k] = {
+                            value: s,
+                            display: s
+                        };
+                    });
+                });
+            }
+
+            delete category.children;
+        }
+
+        // desagrega valores de uma célula
+
+    }, {
+        key: 'unAggregateByCategory',
+        value: function unAggregateByCategory(category) {
+            var k = void 0,
+                o = void 0;
+            var keys = this._maps.keys;
+            var aggr = category.aggr;
+
+            if (aggr) {
+                category.children = aggr.children;
+
+                for (k in aggr.include) {
+                    delete keys[k];
+                }
+
+                for (k in aggr.exclude) {
+                    o = aggr.exclude[k];
+                    keys[k] = o;
+                }
+
+                delete category.aggr;
+            }
+        }
+    }, {
+        key: 'aggregateRowByLevel',
+        value: function aggregateRowByLevel(level) {
+            var _this5 = this;
+
+            this.forEach(this._maps.rows, function (r) {
+                _this5.aggregateByCategory(r);
+            }, level);
+        }
+    }, {
+        key: 'aggregateColByLevel',
+        value: function aggregateColByLevel(level) {
+            var _this6 = this;
+
+            this.forEach(this._maps.cols, function (c) {
+                _this6.aggregateByCategory(c);
+            }, level);
         }
     }, {
         key: 'getMaps',
@@ -2696,8 +2852,9 @@ var CubeJS = function () {
         key: 'removeRow',
         value: function removeRow(row) {
             var arr = void 0;
+            var parent = this._getHeader(row.parentKey);
 
-            arr = row.parent ? row.parent : this._maps.rows;
+            arr = parent ? parent : this._maps.rows;
             arr.splice(row._index, 1);
 
             // limpa o cache
@@ -2712,8 +2869,9 @@ var CubeJS = function () {
         key: 'removeCol',
         value: function removeCol(col) {
             var arr = void 0;
+            var parent = this._getHeader(col.parentKey);
 
-            arr = col.parent ? col.parent : this._maps.cols;
+            arr = parent ? parent : this._maps.cols;
             arr.splice(col._index, 1);
 
             // limpa o cache
@@ -2733,17 +2891,19 @@ var CubeJS = function () {
     }, {
         key: 'mergeCols',
         value: function mergeCols(definition) {
+            var _this7 = this;
+
             var cubejs = this;
             var remove = [];
-            var obj = void 0,
-                parent = void 0;
+            var obj = void 0;
+            var parent = void 0;
 
             // obtém as colunas que serão removidas(colunas raiz) e a chave da coluna que será mesclada(no caso de mesclar filhos)
             definition.references.forEach(function (item) {
                 var col = cubejs.findCol(item);
 
                 if (col) {
-                    parent = col.parent;
+                    parent = _this7._getHeader(col.parentKey);
                     if (!parent) remove.push(col); // não remove agora pq generateHeaders precisa das colunas para montar o no header
                 }
             });
@@ -2758,8 +2918,10 @@ var CubeJS = function () {
             }
 
             if (parent) {
-                parent['children'] = obj.root.children;
+                //@ts-ignore
+                parent.children = obj.root.children;
             } else {
+                obj.root._index = cubejs._maps.cols.length;
                 cubejs._maps.cols.push(obj.root);
             }
 
@@ -2783,7 +2945,7 @@ var CubeJS = function () {
 
                     cubejs._maps.keys[k1] = {
                         value: v,
-                        display: cubejs._formatMeasure(row.measure ? row.key : item.headKey, v)
+                        display: cubejs._formatMeasure( /* row.measure ? row.key : item.headKey */row.measure || item.headKey, v)
                     };
                 });
             });
@@ -2791,17 +2953,18 @@ var CubeJS = function () {
     }, {
         key: 'mergeRows',
         value: function mergeRows(definition) {
+            var _this8 = this;
+
             var cubejs = this;
             var obj = void 0,
                 parent = void 0;
             var remove = [];
 
-            // adiciona a nova linha e remove as linhas concatenadas
             definition.references.forEach(function (item) {
                 var row = cubejs.findRow(item);
 
                 if (row) {
-                    parent = row.parent;
+                    parent = _this8._getHeader(row.parentKey);
                     if (!parent) remove.push(row);
                 }
             });
@@ -2813,11 +2976,13 @@ var CubeJS = function () {
             }
 
             if (parent) {
-                parent['children'] = obj.root.children;
+                //@ts-ignore
+                parent.children = obj.root.children;
             } else {
                 remove.forEach(function (row) {
                     cubejs.removeRow(row);
                 });
+                obj.root._index = cubejs._maps.rows.length;
                 cubejs._maps.rows.push(obj.root);
             }
 
@@ -2841,7 +3006,7 @@ var CubeJS = function () {
 
                     cubejs._maps.keys[k1] = {
                         value: v,
-                        display: cubejs._formatMeasure(col.measure ? col.key : item.headKey, v)
+                        display: cubejs._formatMeasure( /*col.measure ? col.key : item.headKey*/col.measure || item.headKey, v)
                     };
                 });
             });
@@ -2944,7 +3109,7 @@ var CubeJS = function () {
             var level = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : -1;
 
 
-            doForEach(arr, level);
+            doForEach(arr, 0);
 
             function doForEach(arr, activeLevel) {
                 var i = void 0,
@@ -2987,21 +3152,23 @@ var CubeJS = function () {
     }, {
         key: '_createCalculatedRow',
         value: function _createCalculatedRow(calculatedOptions, operationDef, callback) {
-            var _this3 = this;
+            var _this9 = this;
 
             var v = void 0,
                 arr = void 0,
-                o = void 0;
+                o = void 0,
+                parent = void 0;
             var row = calculatedOptions.position == 'last' ? this.findLastRow() : this.findRow(calculatedOptions.keyRef);
 
             if (row) {
-                arr = row.parent ? row.parent.children : this._maps.rows;
+                parent = this._getHeader(row.parentKey) || { key: '' };
+                arr = parent.children || this._maps.rows;
                 o = {
                     key: calculatedOptions.key,
                     measure: calculatedOptions.key,
                     caculated: true,
                     summary: calculatedOptions.summary,
-                    parent: row.parent
+                    parentKey: parent.key
                 };
 
                 this._aux.measures[calculatedOptions.key] = Object.assign({ key: calculatedOptions.key }, DEFAULT_OPERATION_OPTIONS, operationDef);
@@ -3013,9 +3180,9 @@ var CubeJS = function () {
                 // calcula os valores das colunas
                 this.forEach(this._maps.cols, function (col) {
                     v = callback(col, row);
-                    _this3._maps.keys[col.key + calculatedOptions.key] = {
+                    _this9._maps.keys[col.key + calculatedOptions.key] = {
                         value: v,
-                        display: _this3._formatMeasure(calculatedOptions.key, v),
+                        display: _this9._formatMeasure(calculatedOptions.key, v),
                         summary: calculatedOptions.summary
                     };
                 });
@@ -3040,21 +3207,23 @@ var CubeJS = function () {
     }, {
         key: '_createCalculatedCol',
         value: function _createCalculatedCol(calculatedOptions, operationDef, callback) {
-            var _this4 = this;
+            var _this10 = this;
 
             var v = void 0,
                 arr = void 0,
-                o = void 0;
+                o = void 0,
+                parent = void 0;
             var col = calculatedOptions.position == 'last' ? this.findLastCol() : this.findCol(calculatedOptions.keyRef);
 
             if (col) {
-                arr = col.parent ? col.parent.children : this._maps.cols;
+                parent = this._getHeader(col.parentKey) || { key: '' };
+                arr = parent.children || this._maps.cols;
                 o = {
                     key: calculatedOptions.key,
                     measure: calculatedOptions.key,
                     caculated: true,
                     summary: calculatedOptions.summary,
-                    parent: col.parent
+                    parentKey: parent.key
                 };
 
                 this._aux.measures[calculatedOptions.key] = Object.assign({ key: calculatedOptions.key }, DEFAULT_OPERATION_OPTIONS, operationDef);
@@ -3066,9 +3235,9 @@ var CubeJS = function () {
                 // calcula os valores das linhas
                 this.forEach(this._maps.rows, function (row) {
                     v = callback(row, col);
-                    _this4._maps.keys[calculatedOptions.key + row.key] = { // key + r.key = chave da coluna + chave da linha, sempre nessa ordem
+                    _this10._maps.keys[calculatedOptions.key + row.key] = { // key + r.key = chave da coluna + chave da linha, sempre nessa ordem
                         value: v,
-                        display: _this4._formatMeasure(calculatedOptions.key, v),
+                        display: _this10._formatMeasure(calculatedOptions.key, v),
                         summary: calculatedOptions.summary
                     };
                 });
@@ -3093,16 +3262,13 @@ var CubeJS = function () {
         key: '_createHead',
         value: function _createHead(def, root) {
             var self = this;
-            var exists = {
-                item: {},
-                children: {}
-            };
+            var exists = {};
 
-            this._data.forEach(function (row) {
-                processDataRow(row, 0, '', root, null);
+            this._dataset.forEach(function (row) {
+                processDataRow(row, 0, '', root);
             });
 
-            function processDataRow(dataRow, defIndex, parentKey, children, parent) {
+            function processDataRow(dataRow, defIndex, parentKey, children) {
                 var k = void 0,
                     o = void 0,
                     a = void 0,
@@ -3121,57 +3287,60 @@ var CubeJS = function () {
                             key: k,
                             dimension: item.dimension,
                             category: d,
-                            display: self._categoryAlias[d] || d,
-                            parent: null,
+                            display: self._formatCategory(item, self._categoryAlias[d] || d),
+                            parentKey: null,
                             children: null,
                             _index: null
                         };
 
-                        if (k == "Government2013") {
-                            //debugger
-                        }
-
                         if (!exists[k]) {
+                            self._headers[k] = o;
                             exists[k] = {
                                 children: a,
                                 item: o
                             };
                             o._index = children.length;
                             children.push(o);
-                            o.parent = parent;
-                            processDataRow(dataRow, defIndex + 1, k, a, o);
+                            o.parentKey = parentKey;
+                            processDataRow(dataRow, defIndex + 1, k, a);
 
                             if (a.length > 0) {
                                 o.children = a;
                             }
                         } else {
-                            processDataRow(dataRow, defIndex + 1, k, exists[k].children, exists[k].item);
+                            processDataRow(dataRow, defIndex + 1, k, exists[k].children);
                         }
                     } else {
                         k = parentKey + item.measure;
                         o = {
                             key: k,
                             measure: item.measure,
-                            display: self._categoryAlias[item.measure] || item.measure,
-                            parent: null,
+                            display: self._categoryAlias[item.measure] || item.display || item.measure,
+                            parentKey: null,
                             _index: null
                         };
 
                         if (!exists[k]) {
+                            self._headers[k] = o;
                             exists[k] = {
                                 children: children,
                                 item: o
                             };
                             o._index = children.length;
                             children.push(o);
-                            o.parent = parent;
-                            processDataRow(dataRow, defIndex + 1, parentKey, children, parent);
+                            o.parentKey = parentKey;
+                            processDataRow(dataRow, defIndex + 1, parentKey, children);
                         } else {
-                            processDataRow(dataRow, defIndex + 1, parentKey, exists[k].children, parent);
+                            processDataRow(dataRow, defIndex + 1, parentKey, exists[k].children);
                         }
                     }
                 }
             }
+        }
+    }, {
+        key: '_getHeader',
+        value: function _getHeader(key) {
+            return this._headers[key];
         }
 
         // cria this._maps.keys
@@ -3179,7 +3348,7 @@ var CubeJS = function () {
     }, {
         key: '_createKeysMap',
         value: function _createKeysMap() {
-            var _this5 = this;
+            var _this11 = this;
 
             var i = void 0,
                 s = void 0,
@@ -3187,7 +3356,7 @@ var CubeJS = function () {
                 item = void 0;
             var aux = this._aux;
 
-            this._data.forEach(function (r) {
+            this._dataset.forEach(function (r) {
                 s = '';
 
                 for (i = 0; i < aux.all.length; i++) {
@@ -3210,9 +3379,9 @@ var CubeJS = function () {
                 for (i in aux.measures) {
                     if (r[i] !== undefined) {
                         k = s.replace('{measure}', i).replace('{measure}', '').replace('{measure}', '');
-                        _this5._maps.keys[k] = {
+                        _this11._maps.keys[k] = {
                             value: r[i],
-                            display: _this5._formatMeasure(i, r[i])
+                            display: _this11._formatMeasure(i, r[i])
                         };
                     }
                 }
@@ -3287,6 +3456,9 @@ var CubeJS = function () {
 
             if (formated == undefined) {
                 def = this._aux.measures[measure];
+                if (!def) {
+                    debugger;
+                }
                 num = parseInt(value).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1' + def.thousand);
                 rest = value.toFixed(def.precision).split('.')[1] || '';
 
@@ -3295,6 +3467,12 @@ var CubeJS = function () {
             }
 
             return formated;
+        }
+    }, {
+        key: '_formatCategory',
+        value: function _formatCategory(category, value) {
+            value = _dataFormat2.default.Text.format(category, value);
+            return value;
         }
     }]);
 
@@ -3305,6 +3483,7 @@ exports.default = CubeJS;
 
 
 function _getColRangeValues(cubejs, rowKey, kstart, kend) {
+    var parent = void 0;
     var aux = void 0,
         arr = void 0,
         start = void 0,
@@ -3320,7 +3499,9 @@ function _getColRangeValues(cubejs, rowKey, kstart, kend) {
         end = aux;
     }
 
-    arr = start.parent ? start.parent.children : cubejs._maps.cols;
+    parent = cubejs._getHeader(start.parentKey);
+
+    arr = parent ? parent.children : cubejs._maps.cols;
     arr.forEach(function (item, index) {
         if (index <= end._index) {
 
@@ -3339,6 +3520,7 @@ function _getColRangeValues(cubejs, rowKey, kstart, kend) {
 }
 
 function _getRowRangeValues(cubejs, colKey, kstart, kend) {
+    var parent = void 0;
     var aux = void 0,
         arr = void 0,
         start = void 0,
@@ -3354,7 +3536,9 @@ function _getRowRangeValues(cubejs, colKey, kstart, kend) {
         end = aux;
     }
 
-    arr = start.parent ? start.parent.children : cubejs._maps.rows;
+    parent = cubejs._getHeader(start.parentKey);
+
+    arr = parent ? parent.children : cubejs._maps.rows;
     arr.forEach(function (item, index) {
         if (index <= end._index) {
             cubejs.eachLeaf(item, function (leaf) {
@@ -3406,7 +3590,7 @@ function generateHeaders(cubejs, operationDef, finder) {
                         display: child.display,
                         dimension: child.dimension,
                         measure: child.measure,
-                        parent: newHead,
+                        parentKey: newHead.key,
                         _index: newHead.children.length
                     };
                     newHead.children.push(headers[key]);
@@ -3422,6 +3606,68 @@ function generateHeaders(cubejs, operationDef, finder) {
         }
     }
 }
+
+/***/ }),
+
+/***/ "./src/data-format.js":
+/*!****************************!*\
+  !*** ./src/data-format.js ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+var TextFormat = {
+    format: function format(definition, value) {
+        var i = void 0,
+            k = void 0;
+
+        for (i in TextFormat.transformers) {
+            k = definition[i];
+            if (k) {
+                return TextFormat.transformers[i](k, value);
+            }
+        }
+
+        return value;
+    },
+
+
+    transformers: {
+        'text.transform': function textTransform(value, data) {
+            data = data || '';
+
+            switch (value) {
+                case 'uppercase':
+                    data = data.toLocaleUpperCase();
+                    break;
+
+                case 'lowercase':
+                    data = data.toLocaleLowerCase();
+                    break;
+            }
+
+            return data;
+        }
+    }
+};
+
+var NumberFormat = function NumberFormat(def, data) {
+    var num = parseInt(data).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1' + def.thousand);
+    var rest = data.toFixed(def.precision).split('.')[1] || '';
+
+    return num + (rest ? def.decimal : '') + rest;
+};
+
+exports.default = {
+    Text: TextFormat,
+    Number: NumberFormat
+};
 
 /***/ }),
 
@@ -4112,43 +4358,43 @@ _cubejs2.default.createOperation({
     name: 'SORT_COLS',
     description: 'Sorted Cols'
 }, function (operationDef) {
-    doSort(operationDef.dimension, this._maps.cols);
+    doSort(operationDef.dimension, this._maps.cols, operationDef.order);
 }); // @ts-check
 
 _cubejs2.default.createOperation({
     name: 'SORT_ROWS',
     description: 'Sorted Rows'
 }, function (operationDef) {
-    doSort(operationDef.dimension, this._maps.rows);
+    doSort(operationDef.dimension, this._maps.rows, operationDef.order);
 });
 
-function doSort(dimension, arr) {
+function doSort(dimension, arr, order) {
     var i = void 0;
 
     arr._sorted = false;
 
     if (dimension) {
         for (i = 0; i < arr.length; i++) {
-            findDimension(arr, arr[i], dimension);
+            findDimension(arr, arr[i], dimension, order);
             if (arr._sorted) return;
         }
     } else {
-        applySort(arr, true);
+        applySort(arr, true, order);
     }
 }
 
-function findDimension(arr, item, dimension) {
+function findDimension(arr, item, dimension, order) {
     var i = void 0;
 
     arr._sorted = false;
 
     if (item.dimension == dimension) {
-        return applySort(arr);
+        return applySort(arr, null, order);
     }
 
     if (item.children) {
         for (i = 0; i < item.children.length; i++) {
-            findDimension(item.children, item.children[i], dimension);
+            findDimension(item.children, item.children[i], dimension, order);
             if (item.children._sorted) return;
         }
     }
@@ -4156,20 +4402,27 @@ function findDimension(arr, item, dimension) {
 
 function applySort(arr) {
     var includeChildren = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+    var order = arguments[2];
 
     if (arr._sorted) return;
 
     if (includeChildren) {
         arr.forEach(function (item) {
             if (item.dimension && item.children) {
-                applySort(item.children, includeChildren);
+                applySort(item.children, includeChildren, order);
             }
         });
     }
 
-    arr.sort(function (o1, o2) {
-        return o1.summary || o2.summary ? 0 : o1.display < o2.display ? -1 : o1.display > o2.display ? 1 : 0;
-    });
+    if (order == 'asc') {
+        arr.sort(function (o1, o2) {
+            return o1.summary || o2.summary ? 0 : o1.display < o2.display ? -1 : o1.display > o2.display ? 1 : 0;
+        });
+    } else if (order == 'desc') {
+        arr.sort(function (o1, o2) {
+            return o1.summary || o2.summary ? 0 : o1.display > o2.display ? -1 : o1.display < o2.display ? 1 : 0;
+        });
+    }
 
     // atualiza _index
     arr.forEach(function (item, index) {
@@ -4409,13 +4662,15 @@ var _operations3 = __webpack_require__(/*! ./operations.csv */ "./test/operation
 
 var _operations4 = _interopRequireDefault(_operations3);
 
+var _csv = __webpack_require__(/*! ../src/adapters/csv */ "./src/adapters/csv.js");
+
+var _csv2 = _interopRequireDefault(_csv);
+
 var _data = __webpack_require__(/*! ./data1.csv */ "./test/data1.csv");
 
 var _data2 = _interopRequireDefault(_data);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// @ts-check
 
 function elasticsearch() {
     var definition = {
@@ -4452,10 +4707,21 @@ function elasticsearch() {
 }
 
 // @ts-ignore
-
+// @ts-check
 
 function csv() {
-    var definition = {
+    var cube = void 0,
+        definition = void 0,
+        data = void 0;
+
+    _src2.default.defaults({
+        precision: 0,
+        thousand: '',
+        decimal: ','
+    });
+
+    data = _csv2.default.toDataset(_data2.default);
+    definition = {
         cols: [{ dimension: 'Segment' }, { dimension: 'Year' }],
         rows: [
         //{dimension: 'Country'}, 
@@ -4463,12 +4729,7 @@ function csv() {
         filters: []
     };
 
-    _src2.default.defaults({
-        precision: 0,
-        thousand: '',
-        decimal: ','
-    });
-    var cube = new _src2.default(definition, 'csv');
+    cube = new _src2.default(definition);
 
     cube.createField({
         key: 'Profit',
@@ -4476,7 +4737,7 @@ function csv() {
             return row['Sale Price'] - row['Manufacturing Price'];
         }
     });
-    cube.setData(_data2.default);
+    cube.setDataset(data);
 
     showOperations(_operations4.default, cube);
     renderCube(cube);
@@ -4547,7 +4808,8 @@ exports.default = [
 {
     key: 'opSortRows',
     operation: 'SORT_ROWS',
-    dimension: 'Country'
+    dimension: 'Country',
+    order: 'desc'
 }, {
     key: 'opSortCols',
     operation: 'SORT_COLS',
